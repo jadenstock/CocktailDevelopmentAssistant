@@ -1,0 +1,13 @@
+[project]
+name = "cocktail-agent"
+version = "0.1.0"
+description = "An Agentic Workflow for developing cocktails"
+requires-python = ">=3.10,<3.13"
+dependencies = [
+    "requests",
+    "toml",
+    "jsonlines",
+    "notion-client>=2.3.0",
+    "openai>=1.68.2",
+    "openai-agents>=0.0.7",
+]
