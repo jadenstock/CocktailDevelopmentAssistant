@@ -2,6 +2,13 @@ from agents import Agent, Runner, handoff, WebSearchTool
 import asyncio
 
 import toml
+
+from src.notion.notion_tools import (
+    query_bottles_by_type_tool,
+    query_bottles_by_name_tool,
+    get_available_types_tool
+)
+
 instructions_config = toml.load("etc/instructions.toml")
 
 # Define sub-agents
@@ -29,6 +36,16 @@ cocktail_naming_agent = Agent(
     tools=[]
 )
 
+bottle_inventory_agent = Agent(
+    name="Bottle Inventory Agent",
+    instructions=instructions_config["bottle_inventory_agent"]["instructions"],
+    tools=[
+        query_bottles_by_type_tool,
+        query_bottles_by_name_tool,
+        get_available_types_tool
+    ]
+)
+
 # Main agent orchestrating handoffs
 main_agent = Agent(
     name="Cocktail Development Orchestrator",
@@ -36,6 +53,7 @@ main_agent = Agent(
     handoffs=[
         cocktail_spec_finder,
         flavor_affinity_agent,
+        bottle_inventory_agent,
         cocktail_spec_analyzer,
         cocktail_naming_agent
     ]
