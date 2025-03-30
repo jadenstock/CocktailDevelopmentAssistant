@@ -1,31 +1,24 @@
-from agents import Agent, Runner, handoff, WebSearchTool, FileSearchTool, RunContextWrapper
 import asyncio
-import argparse
-
-from dataclasses import dataclass, field, asdict
-from typing import Dict, List, Optional
-
+import typer
 import toml
-import json
-
-from settings import (
-    INSTA_POST_OPENAI_DB
-)
-
+from dataclasses import dataclass, field
+from typing import Dict, List
+from agents import Agent, Runner, WebSearchTool, FileSearchTool
+from src.settings import INSTA_POST_OPENAI_DB
 from src.notion.notion_tools import (
     query_bottles_by_type_tool,
     query_bottles_by_name_tool,
     get_available_types_tool
 )
 
+app = typer.Typer()
+
 @dataclass
-class CocktailContext:
-    current_inventory: Dict[str, List[str]] = field(default_factory=dict)
-    selected_ingredients: List[str] = field(default_factory=list)
-    last_suggestions: List[Dict] = field(default_factory=list)
-    user_preferences: Dict = field(default_factory=dict)
+class ConversationContext:
+    history: List[Dict[str, str]] = field(default_factory=list)
+    preferences: Dict = field(default_factory=dict)
 
-
+# === Initialize All Agents ===
 cocktail_spec_finder_agent_config = toml.load("etc/cocktail_spec_finder.toml")
 cocktail_spec_finder = Agent(
     name="Cocktail Spec Finder",
@@ -42,7 +35,7 @@ flavor_affinity_agent = Agent(
     model=flavor_affinity_config["flavor_affinity_agent"]["model"]
 )
 
-cocktail_spec_analyzer_agent_config = toml.load("etc/cocktail_spec_analyzer_agent.toml")
+cocktail_spec_analyzer_agent_config = toml.load("etc/cocktail_spec_analyzer.toml")
 cocktail_spec_analyzer = Agent(
     name="Cocktail Spec Analyzer",
     instructions=cocktail_spec_analyzer_agent_config["cocktail_spec_analyzer"]["instructions"],
@@ -98,53 +91,62 @@ main_agent = Agent(
     ]
 )
 
+# === Create a Mapping of Agent Names ===
+AGENTS = {
+    "main": main_agent,
+    "cocktail_spec_finder": cocktail_spec_finder,
+    "flavor_affinity": flavor_affinity_agent,
+    "cocktail_spec_analyzer": cocktail_spec_analyzer,
+    "cocktail_naming": cocktail_naming_agent,
+    "bottle_inventory": bottle_inventory_agent,
+    "instagram_post": instagram_post_agent,
+}
 
-@dataclass
-class ConversationContext:
-    history: List[Dict[str, str]] = field(default_factory=list)
-    preferences: Dict = field(default_factory=dict)
+@app.command()
+def run(agent: str = typer.Option("main", help=f"Specify which agent to use. options: {AGENTS.keys()}")):
+    """Run the chatbot with the selected agent."""
+    if agent not in AGENTS:
+        typer.echo(f"Error: Agent '{agent}' not found. Available agents: {', '.join(AGENTS.keys())}")
+        raise typer.Exit(1)
 
-async def main():
-    print("=== Cocktail Conversation ===")
-    print("Describe what you're craving or type 'exit'\n")
-    
-    context = ConversationContext()
-    
-    while True:
-        try:
-            user_input = input("\nYou: ").strip()
-            
-            if user_input.lower() in ('exit', 'quit', 'q'):
+    selected_agent = AGENTS[agent]
+    typer.echo(f"Running {selected_agent.name}...\n")
+
+    async def main():
+        print("=== Cocktail Conversation ===")
+        print("Describe what you're craving or type 'exit'\n")
+
+        context = ConversationContext()
+
+        while True:
+            try:
+                user_input = input("\nYou: ").strip()
+
+                if user_input.lower() in ('exit', 'quit', 'q'):
+                    break
+
+                if not user_input:
+                    continue
+
+                context.history.append({"role": "user", "content": user_input})
+                prompt = "\n".join(f"{msg['role']}: {msg['content']}" for msg in context.history[-6:])
+
+                result = await Runner.run(
+                    selected_agent,
+                    input=prompt,
+                    context={"preferences": context.preferences}
+                )
+
+                ai_response = result.final_output
+                context.history.append({"role": "assistant", "content": ai_response})
+
+                print(f"\nAssistant: {ai_response}")
+
+            except KeyboardInterrupt:
+                print("\nEnding conversation...")
                 break
-                
-            if not user_input:
-                continue
-                
-            # Add to conversation history
-            context.history.append({"role": "user", "content": user_input})
-            
-            # Generate prompt with full history
-            prompt = "\n".join(
-                f"{msg['role']}: {msg['content']}" 
-                for msg in context.history[-6:]  # Keep last 6 exchanges
-            )
-            
-            # Get AI response - CORRECTED CALL
-            result = await Runner.run(
-                main_agent,  # Positional argument
-                input=prompt,
-                context={"preferences": context.preferences}
-            )
-            
-            # Store response
-            ai_response = result.final_output
-            context.history.append({"role": "assistant", "content": ai_response})
-            
-            print(f"\nAssistant: {ai_response}")
-            
-        except KeyboardInterrupt:
-            print("\nEnding conversation...")
-            break
+
+    asyncio.run(main())
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    app()

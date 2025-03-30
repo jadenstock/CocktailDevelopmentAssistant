@@ -10,4 +10,5 @@ dependencies = [
     "notion-client>=2.3.0",
     "openai>=1.68.2",
     "openai-agents>=0.0.7",
+    "typer>=0.15.2",
 ]
