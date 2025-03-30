@@ -2,3 +2,4 @@ data/
 .env
 uv.lock
 *.pyc
+etc/local_config.toml
