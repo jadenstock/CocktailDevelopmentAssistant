@@ -16,7 +16,7 @@ from src.notion.notion_tools import (
 )
 
 secrets_config = toml.load("etc/config.toml")
-instructions_config = toml.load("etc/instructions.toml")
+instructions_config = toml.load("etc/agent_instructions.toml")
 
 
 @dataclass
@@ -44,7 +44,7 @@ flavor_affinity_agent = Agent(
 cocktail_spec_analyzer = Agent(
     name="Cocktail Spec Analyzer",
     instructions=instructions_config["cocktail_spec_analyzer"]["instructions"],
-    tools=[],
+    tools=[WebSearchTool()],
     model=instructions_config["cocktail_spec_analyzer"]["model"]
 )
 
