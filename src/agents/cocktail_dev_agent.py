@@ -16,7 +16,7 @@ from src.notion.notion_tools import (
 )
 
 secrets_config = toml.load("etc/config.toml")
-instructions_config = toml.load("etc/agent_instructions.toml")
+
 
 
 @dataclass
@@ -34,11 +34,12 @@ cocktail_spec_finder = Agent(
     model=instructions_config["cocktail_spec_finder"]["model"]
 )
 
+flavor_affinity_config = toml.load("etc/flavor_affinity_agent.toml")
 flavor_affinity_agent = Agent(
     name="Flavor Affinity Agent",
-    instructions=instructions_config["flavor_affinity_agent"]["instructions"],
+    instructions=flavor_affinity_config["flavor_affinity_agent"]["instructions"],
     tools=[WebSearchTool()],
-    model=instructions_config["flavor_affinity_agent"]["model"]
+    model=flavor_affinity_config["flavor_affinity_agent"]["model"]
 )
 
 cocktail_spec_analyzer = Agent(
@@ -66,21 +67,21 @@ bottle_inventory_agent = Agent(
     model=instructions_config["bottle_inventory_agent"]["model"]
 )
 
-
+insta_post_agent_config = toml.load("etc/instagram_post_agent.toml")
 insta_vector_id = secrets_config["openai"]["insta_post_vector_db"]
 instagram_post_agent = Agent(
     name="Instagram Post Agent",
-    instructions=instructions_config["instagram_post_agent"]["instructions"],
+    instructions=insta_post_agent_config["instagram_post_agent"]["instructions"],
     tools=[
         FileSearchTool(
             max_num_results=5,
             vector_store_ids=[insta_vector_id],
         )
     ],
-    model=instructions_config["instagram_post_agent"]["model"]
+    model=insta_post_agent_config["instagram_post_agent"]["model"]
 )
 
-
+instructions_config = toml.load("etc/agent_instructions.toml")
 # Main agent orchestrating handoffs
 main_agent = Agent(
     name="Cocktail Development Orchestrator",
