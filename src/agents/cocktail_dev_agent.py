@@ -1,5 +1,6 @@
 from agents import Agent, Runner, handoff, WebSearchTool
 import asyncio
+import argparse
 
 import toml
 
@@ -60,10 +61,29 @@ main_agent = Agent(
 )
 
 async def main():
-    print("Starting agent...")
-    query = "Find me a pear-forward cocktail and suggest a name."
-    result = await Runner.run(main_agent, input=query)
-    print(result.final_output)
+    print("Starting cocktail development agent...")
+    print("Type your cocktail request (e.g., 'Find me a pear-forward cocktail and suggest a name')\n")
+    
+    # Get input interactively
+    while True:
+        try:
+            query = input("Your cocktail request (or 'quit' to exit): ")
+            if query.lower() in ('quit', 'exit', 'q'):
+                break
+                
+            if not query.strip():
+                print("Please enter a valid request.")
+                continue
+                
+            print("\nProcessing your request...\n")
+            result = await Runner.run(main_agent, input=query)
+            print("\nResults:")
+            print(result.final_output)
+            print("\n" + "="*50 + "\n")  # Add separator for clarity
+            
+        except KeyboardInterrupt:
+            print("\nExiting...")
+            break
 
 if __name__ == "__main__":
     asyncio.run(main())
