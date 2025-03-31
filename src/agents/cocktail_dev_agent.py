@@ -4,11 +4,8 @@ import toml
 from dataclasses import dataclass, field
 from typing import Dict, List
 from agents import Agent, ModelSettings, Runner, WebSearchTool, FileSearchTool
-from src.settings import INSTA_POST_OPENAI_DB, RECOMMENDED_PROMPT_PREFIX
+from src.settings import INSTA_POST_OPENAI_DB
 from src.notion.notion_tools import (
-    query_bottles_by_type_tool,
-    query_bottles_by_name_tool,
-    get_available_types_tool,
     get_all_bottles_tool
 )
 
@@ -107,7 +104,7 @@ main_agent = Agent(
         ),
         cocktail_spec_analyzer.as_tool(
             tool_name="analyze_cocktail_spec",
-            tool_description="ANalyze a cocktail spec to get feedback.",
+            tool_description="Analyze a cocktail spec to get feedback.",
         ),
         cocktail_naming_agent.as_tool(
             tool_name="create_cocktail_name",
