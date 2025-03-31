@@ -87,5 +87,5 @@ Provenance:
 - Memory Keeper: Avoided 2022's "muddy texture" via clarification  
 - Flavor Architect: Celery complements Islay's medicinal notes  
 """
-model = "gpt-4-turbo-preview"
+model = "o3-mini-2025-01-31"
 temperature = 0.5

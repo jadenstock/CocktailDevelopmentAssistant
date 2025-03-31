@@ -45,5 +45,5 @@ SOURCES: [X] PUNCH, [Y] Death & Co, [Z] Difford’s
 - NEVER include techniques unless they are novel or unique
 - ALWAYS prioritize recipes with exact measurements (no "parts")
 """
-model = "gpt-4o"  
+model = "gpt-4o-mini-2024-07-18"  
 temperature = 0.1

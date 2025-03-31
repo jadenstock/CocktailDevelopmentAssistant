@@ -31,5 +31,5 @@ You are a FLAVOR PAIRING RESEARCHER. Find validated ingredient combinations usin
    - Never suggest untested combinations
    - Always include seasonal alternatives
 """
-model = "gpt-4o"
+model = "gpt-4o-mini-2024-07-18"
 temperature = 0.3

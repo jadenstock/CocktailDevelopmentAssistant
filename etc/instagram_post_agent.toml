@@ -56,5 +56,5 @@ THEMES:
 - ALWAYS include your past self's critique
 - FLAG recurring issues (e.g., "3x noted 'too sweet'")
 """
-model = "gpt-4o"
+model = "gpt-4o-mini-2024-07-18"
 temperature = 0.1

@@ -8,7 +8,8 @@ from src.settings import INSTA_POST_OPENAI_DB
 from src.notion.notion_tools import (
     query_bottles_by_type_tool,
     query_bottles_by_name_tool,
-    get_available_types_tool
+    get_available_types_tool,
+    get_all_bottles_tool
 )
 
 app = typer.Typer()
@@ -56,9 +57,7 @@ bottle_inventory_agent = Agent(
     name="Bottle Inventory Agent",
     instructions=bottle_inventory_agent_config["bottle_inventory_agent"]["instructions"],
     tools=[
-        query_bottles_by_type_tool,
-        query_bottles_by_name_tool,
-        get_available_types_tool
+        get_all_bottles_tool
     ],
     model=bottle_inventory_agent_config["bottle_inventory_agent"]["model"]
 )

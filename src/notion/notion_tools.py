@@ -39,6 +39,13 @@ async def get_available_types_tool() -> str:
     types = await asyncio.to_thread(get_all_type_tags, notion, db_id)
     return "\n- " + "\n- ".join(types) if types else "No types found"
 
+@function_tool
+async def get_all_bottles_tool() -> str:
+    """Retrieve all bottles in the inventory. Returns formatted list of all bottles."""
+    notion, db_id = get_notion_client_and_db()
+    bottles = await asyncio.to_thread(get_all_bottles, notion, db_id)
+    return format_bottles(bottles)
+
 def format_bottles(bottles: list) -> str:
     """Format bottle data for LLM consumption"""
     if not bottles: return "No matching bottles found"
