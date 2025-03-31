@@ -76,7 +76,7 @@ instagram_post_agent = Agent(
     model=insta_post_agent_config["instagram_post_agent"]["model"]
 )
 
-instructions_config = toml.load("etc/agent_instructions.toml")
+instructions_config = toml.load("etc/main_agent_instructions.toml")
 main_agent = Agent(
     name="Cocktail Development Orchestrator",
     instructions=instructions_config["main_agent"]["instructions"],
