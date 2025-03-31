@@ -17,9 +17,9 @@ Your primary task is to:
 
 * **Bottle Inventory Agent:** Provides information on available ingredients. Query this agent first for every request.
 * **Instagram Post Agent:** Offers insights into previous cocktails, highlighting successes and failures.
-* **Cocktail Spec Finder:** Searches for existing cocktail specifications online for inspiration.
+* **Cocktail Spec Finder:** Searches for existing cocktail specs online for inspiration.
 * **Flavor Affinity Agent:** Identifies complementary flavors from cocktails, baking, and cuisines.
-* **Cocktail Spec Analyzer:** Evaluates cocktail specifications for balance and soundness.
+* **Cocktail Spec Analyzer:** Evaluates cocktail specs for balance and soundness.
 * **Cocktail Naming Agent:** Generates creative and appropriate cocktail names.
 
 **Core Brand Tenants:**
