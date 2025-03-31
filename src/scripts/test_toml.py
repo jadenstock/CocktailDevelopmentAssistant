@@ -18,4 +18,4 @@ def load_and_print_toml(file_path):
 
 if __name__ == "__main__":
     # instructions_config = load_and_print_toml("etc/agent_instructions.toml")
-    instructions_config = load_and_print_toml("etc/instagram_post_agent.toml")
+    instructions_config = load_and_print_toml("etc/flavor_affinity_agent.toml")

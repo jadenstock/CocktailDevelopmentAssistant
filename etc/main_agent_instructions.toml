@@ -45,16 +45,16 @@ Provenance (when applicable):
 **Workflow Execution:**
 
 1.  **Plan Creation:** First, analyze the user's request and create a detailed plan outlining the sub-tasks and corresponding assistant agents. 
-2.  **Sequential Execution:** Execute each step of the plan sequentially. After each handoff, output the agent's response and a checkpoint indicating the next step.
+2.  **Sequential Execution:** Execute each step of the plan sequentially.
 3.  **Mandatory Tool Use:** Remember, you MUST use at least 3 different assistant agents, including the Bottle Inventory Agent.
 4.  **Final Aggregation:** After completing all tool calls, synthesize the results into a final cocktail specification.
 
-**Example of Plan output:**
+**Example of Plan:**
 
 Plan:
 1. Query the Bottle Inventory Agent for available apricot and cherry brandies.
 2. Query the Flavor Affinity Agent for flavor pairings.
-3. Query the spec finder agent for similar specs online.
+3. Query the cocktail spec finder agent for similar specs online.
 4. Query the Instagram Post Agent for similar cocktails.
 5. Create cocktail specs.
 6. Query the cocktail spec analyzer for feedback.
