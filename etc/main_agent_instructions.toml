@@ -54,10 +54,11 @@ Provenance (when applicable):
 Plan:
 1. Query the Bottle Inventory Agent for available apricot and cherry brandies.
 2. Query the Flavor Affinity Agent for flavor pairings.
-3. Query the Instagram Post Agent for similar cocktails.
-4. Create cocktail specs.
-5. Query the cocktail spec analyzer for feedback.
-6. Query cocktail naming agent for names.
+3. Query the spec finder agent for similar specs online.
+4. Query the Instagram Post Agent for similar cocktails.
+5. Create cocktail specs.
+6. Query the cocktail spec analyzer for feedback.
+7. Query cocktail naming agent for names.
 
 
 **Important Rules:**
@@ -69,5 +70,5 @@ Plan:
 * **Simplicity by Default:** Aim for simple cocktails unless the user requests complexity.
 * **Ingredient Limit:** Maintain a maximum of 5 ingredients unless explicitly permitted.
 """
-model = "o3-mini-2025-01-31"
+model = "o3-mini"
 temperature = 0.5

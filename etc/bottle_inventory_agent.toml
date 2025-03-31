@@ -5,5 +5,5 @@ You have access to various tools to help you fetch a list of available ingredien
 
 For all requests you are to fetch all bottles and then go through each one and asses it's relevance based on type, tags, notes, etc. You should return a list of all relevant bottles/ingredients sorted by relevance.
 """
-model = "gpt-4o-mini-2024-07-18"  
+model = "gpt-4o-mini"  
 temperature = 0.1

@@ -3,7 +3,7 @@ import typer
 import toml
 from dataclasses import dataclass, field
 from typing import Dict, List
-from agents import Agent, Runner, WebSearchTool, FileSearchTool
+from agents import Agent, ModelSettings, Runner, WebSearchTool, FileSearchTool
 from src.settings import INSTA_POST_OPENAI_DB, RECOMMENDED_PROMPT_PREFIX
 from src.notion.notion_tools import (
     query_bottles_by_type_tool,
@@ -23,10 +23,11 @@ class ConversationContext:
 cocktail_spec_finder_agent_config = toml.load("etc/cocktail_spec_finder.toml")
 cocktail_spec_finder = Agent(
     name="Cocktail Spec Finder",
-    instructions=RECOMMENDED_PROMPT_PREFIX + "\n" + cocktail_spec_finder_agent_config["cocktail_spec_finder"]["instructions"],
+    instructions=cocktail_spec_finder_agent_config["cocktail_spec_finder"]["instructions"],
     handoff_description="Finds cocktail specs from reputible sources from the internet.",
-    tools=[WebSearchTool()],
-    model=cocktail_spec_finder_agent_config["cocktail_spec_finder"]["model"]
+    tools=[WebSearchTool(search_context_size="low")],
+    model=cocktail_spec_finder_agent_config["cocktail_spec_finder"]["model"],
+    model_settings=ModelSettings(temperature=cocktail_spec_finder_agent_config["cocktail_spec_finder"]["temperature"])
 )
 
 flavor_affinity_config = toml.load("etc/flavor_affinity_agent.toml")
@@ -34,44 +35,48 @@ flavor_affinity_agent = Agent(
     name="Flavor Affinity Agent",
     instructions=flavor_affinity_config["flavor_affinity_agent"]["instructions"],
     handoff_description="Finds flavor affinities from the internet.",
-    tools=[WebSearchTool()],
-    model=flavor_affinity_config["flavor_affinity_agent"]["model"]
+    tools=[WebSearchTool(search_context_size="low")],
+    model=flavor_affinity_config["flavor_affinity_agent"]["model"],
+    model_settings=ModelSettings(temperature=flavor_affinity_config["flavor_affinity_agent"]["temperature"])
 )
 
 cocktail_spec_analyzer_agent_config = toml.load("etc/cocktail_spec_analyzer.toml")
 cocktail_spec_analyzer = Agent(
     name="Cocktail Spec Analyzer",
-    instructions=RECOMMENDED_PROMPT_PREFIX + "\n" + cocktail_spec_analyzer_agent_config["cocktail_spec_analyzer"]["instructions"],
+    instructions=cocktail_spec_analyzer_agent_config["cocktail_spec_analyzer"]["instructions"],
     handoff_description="Analyzes a cocktail spec and provides feedback.",
-    tools=[WebSearchTool()],
-    model=cocktail_spec_analyzer_agent_config["cocktail_spec_analyzer"]["model"]
+    tools=[WebSearchTool(search_context_size="low")],
+    model=cocktail_spec_analyzer_agent_config["cocktail_spec_analyzer"]["model"],
+    model_settings=ModelSettings(temperature=cocktail_spec_analyzer_agent_config["cocktail_spec_analyzer"]["temperature"])
 )
 
 cocktail_naming_agent_config = toml.load("etc/cocktail_naming_agent.toml")
 cocktail_naming_agent = Agent(
     name="Cocktail Naming Agent",
-    instructions=RECOMMENDED_PROMPT_PREFIX + "\n" + cocktail_naming_agent_config["cocktail_naming_agent"]["instructions"],
+    instructions=cocktail_naming_agent_config["cocktail_naming_agent"]["instructions"],
     handoff_description="Creates a creative name for a cocktail.",
     tools=[],
-    model=cocktail_naming_agent_config["cocktail_naming_agent"]["model"]
+    model=cocktail_naming_agent_config["cocktail_naming_agent"]["model"],
+    model_settings=ModelSettings(temperature=cocktail_naming_agent_config["cocktail_naming_agent"]["temperature"])
 )
 
 bottle_inventory_agent_config = toml.load("etc/bottle_inventory_agent.toml")
 bottle_inventory_agent = Agent(
     name="Bottle Inventory Agent",
-    instructions=RECOMMENDED_PROMPT_PREFIX + "\n" + bottle_inventory_agent_config["bottle_inventory_agent"]["instructions"],
+    instructions=bottle_inventory_agent_config["bottle_inventory_agent"]["instructions"],
     handoff_description="Finds relevant bottles from the inventory.",
     tools=[
         get_all_bottles_tool
     ],
-    model=bottle_inventory_agent_config["bottle_inventory_agent"]["model"]
+    model=bottle_inventory_agent_config["bottle_inventory_agent"]["model"],
+    model_settings=ModelSettings(temperature=bottle_inventory_agent_config["bottle_inventory_agent"]["temperature"])
 )
 
 insta_post_agent_config = toml.load("etc/instagram_post_agent.toml")
 insta_vector_id = INSTA_POST_OPENAI_DB
 instagram_post_agent = Agent(
     name="Instagram Post Agent",
-    instructions=RECOMMENDED_PROMPT_PREFIX + "\n" + insta_post_agent_config["instagram_post_agent"]["instructions"],
+    instructions=insta_post_agent_config["instagram_post_agent"]["instructions"],
     handoff_description="Finds relevant instagram posts from db of old posts.",
     tools=[
         FileSearchTool(
@@ -79,13 +84,14 @@ instagram_post_agent = Agent(
             vector_store_ids=[insta_vector_id],
         )
     ],
-    model=insta_post_agent_config["instagram_post_agent"]["model"]
+    model=insta_post_agent_config["instagram_post_agent"]["model"],
+    model_settings=ModelSettings(temperature=insta_post_agent_config["instagram_post_agent"]["temperature"])
 )
 
 instructions_config = toml.load("etc/main_agent_instructions.toml")
 main_agent = Agent(
     name="Cocktail Development Orchestrator",
-    instructions=RECOMMENDED_PROMPT_PREFIX + "\n" + instructions_config["main_agent"]["instructions"],
+    instructions=instructions_config["main_agent"]["instructions"],
     tools=[
         cocktail_spec_finder.as_tool(
             tool_name="find_cocktail_specs",
@@ -112,7 +118,7 @@ main_agent = Agent(
             tool_description="Find relevant historical instagram posts for previous projects.",
         )
     ],
-    model=instructions_config["main_agent"]["model"]
+    model=instructions_config["main_agent"]["model"],
 )
 
 # === Create a Mapping of Agent Names ===

@@ -30,5 +30,5 @@ INGREDIENT FLAGS:
 • [Ingredient]: "[Issue/Rationale]"
 • [Ingredient]: "[Web-sourced data]"
 """
-model = "gpt-4o-mini-2024-07-18"  
+model = "gpt-4o-mini"  
 temperature = 0.2

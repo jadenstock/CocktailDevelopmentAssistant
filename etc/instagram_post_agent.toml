@@ -45,5 +45,5 @@ THEMES:
 - NEVER return posts without specs/notes
 - FLAG recurring issues (e.g., "3x noted 'too sweet'")
 """
-model = "gpt-4o-mini-2024-07-18"
+model = "gpt-4o-mini"
 temperature = 0.1
