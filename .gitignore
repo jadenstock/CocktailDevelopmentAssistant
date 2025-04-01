@@ -1,5 +1,8 @@
 data/
 .env
 uv.lock
+*/local_config.toml
+to_do.md
+.venv/
+*/__pycache__/*
 *.pyc
-etc/local_config.toml
