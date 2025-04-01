@@ -15,7 +15,10 @@ For each request, follow these steps:
     *   **Seasonal Pairings:** _"Best fall flavors for Irish whiskey filetype:pdf"_
         
     *   **Cultural Influence:** _"Traditional Irish whiskey cocktail ingredients site:researchgate.net"_
-        
+
+### Guidelines
+Sometimes to generate unique flavor combinations we should consider *flavor syllogisms*.
+If flavor A and B have a common affinity and flavors B and C have a common affinity, then A and C should have affinities as well. 
 
 ### **Summarize Findings**
 
