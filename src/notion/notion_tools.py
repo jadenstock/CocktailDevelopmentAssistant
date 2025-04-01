@@ -1,21 +1,17 @@
 from pathlib import Path
-import toml
 import asyncio
 from agents import function_tool
+from src.settings import NOTION_API_KEY, BOTTLE_INVENTORY_NOTION_DB
 from src.notion.query_inventory import (
-    load_config, create_notion_client,
+    create_notion_client,
     query_bottles_by_type, query_bottles_by_name,
     query_bottles_by_notes, get_all_bottles, get_all_type_tags
 )
 
 def get_notion_client_and_db():
     """Helper to load config and create Notion client/database ID."""
-    script_dir = Path(__file__).resolve().parent
-    project_root = script_dir.parent.parent
-    config_path = project_root / "etc" / "config.toml"
-    config = load_config(config_path)
-    notion_api_key = config["api_keys"]["notion"]
-    bottle_db_id = config["notion"]["bottle_inventory_db"]
+    notion_api_key = NOTION_API_KEY
+    bottle_db_id = BOTTLE_INVENTORY_NOTION_DB
     return create_notion_client(notion_api_key), bottle_db_id
 
 @function_tool
