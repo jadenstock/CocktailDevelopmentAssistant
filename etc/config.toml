@@ -1,0 +1,20 @@
+# Cocktail Development Agent Configuration
+
+[api_keys]
+# OpenAI API key for accessing GPT models and Agents API
+openai = "YOUR_OPENAI_API_KEY"
+# Notion API key for accessing Notion databases
+notion = "YOUR_NOTION_API_KEY"
+
+[notion]
+# Notion database IDs
+bottle_inventory_db = ""
+cocktail_projects_db = ""
+cocktail_entries_db = ""
+old_posts_db = ""
+
+[openai]
+insta_post_vector_db = ""
+
+[paths]
+data_dir = "data/"
