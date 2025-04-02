@@ -2,3 +2,15 @@ export OPENAI_API_KEY := $(shell python -c "import toml; import os.path; config_
 
 run-agent:
 	set PYTHONPATH=. && python src/cocktail_dev_agent.py --agent $(or $(agent),main)
+
+list-bottles:
+	set PYTHONPATH=. && python src/notion/query_inventory.py --all
+
+list-bottles-by-type:
+	set PYTHONPATH=. && python src/notion/query_inventory.py --query $(type)
+
+list-bottles-by-name:
+	set PYTHONPATH=. && python src/notion/query_inventory.py --name \"$(name)\"
+
+list-bottles-by-notes:
+	set PYTHONPATH=. && python src/notion/query_inventory.py --notes $(notes)

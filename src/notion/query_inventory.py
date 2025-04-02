@@ -10,6 +10,7 @@ import sys
 from pathlib import Path
 import toml
 from notion_client import Client
+from src.settings import NOTION_API_KEY, BOTTLE_INVENTORY_NOTION_DB
 
 def load_config(config_path):
     """Load configuration from TOML file."""
@@ -23,6 +24,109 @@ def create_notion_client(api_key):
     """Create a Notion client with the provided API key."""
     return Client(auth=api_key)
 
+
+def format_bottle_object(bottle):
+    """Format a bottle object for display."""
+    bottle_str = f"  - {bottle['name']} ({', '.join(bottle['type'])})"
+    if bottle['almost_gone']:
+        bottle_str += " (almost gone)"
+    if bottle['not_for_mixing']:
+        bottle_str += " (not for mixing)"
+    if bottle['notes']:
+        bottle_str += f"\n    Notes: {bottle['notes']}"
+    if bottle['technical_notes']:
+        bottle_str += f"\n    Technical Notes: {bottle['technical_notes']}"
+    return bottle_str
+
+def parse_notion_row_to_bottle(result):
+    """
+    Parse a Notion database row into a bottle dictionary.
+    
+    Args:
+        result: A single result object from a Notion database query
+        
+    Returns:
+        A dictionary containing standardized bottle information
+    """
+    properties = result.get('properties', {})
+    
+    # Extract name
+    name_property = properties.get('Name', {})
+    title = name_property.get('title', [])
+    name = title[0].get('text', {}).get('content', '') if title else ''
+    
+    # Extract type tags
+    type_property = properties.get('Type', {})
+    multi_select = type_property.get('multi_select', [])
+    types = [tag.get('name') for tag in multi_select]
+    
+    # Extract notes if available
+    notes_property = properties.get('Notes', {})
+    rich_text = notes_property.get('rich_text', [])
+    notes = rich_text[0].get('text', {}).get('content', '') if rich_text else ''
+
+    # Extract technical notes if available
+    technical_notes_property = properties.get('Technical Notes', {})
+    rich_text = technical_notes_property.get('rich_text', [])
+    technical_notes = rich_text[0].get('text', {}).get('content', '') if rich_text else ''
+
+    # Extract almost_gone toggle
+    almost_gone_property = properties.get('almost_gone', {})
+    almost_gone = almost_gone_property.get('checkbox', False)
+
+    # Extract not_for_mixing toggle
+    not_for_mixing_property = properties.get('not_for_mixing', {})
+    not_for_mixing = not_for_mixing_property.get('checkbox', False)
+    
+    # Create and return bottle dictionary
+    return {
+        'name': name,
+        'type': types,
+        'notes': notes,
+        'technical_notes': technical_notes,
+        'almost_gone': almost_gone,
+        'not_for_mixing': not_for_mixing
+    }
+
+def query_notion_database(notion_client, database_id, filter_obj=None):
+    """
+    Query the Notion database with the provided filter and return all results.
+    
+    Args:
+        notion_client: The Notion client instance
+        database_id: The ID of the bottle inventory database
+        filter_obj: Optional filter object to apply to the query
+        
+    Returns:
+        A list of dictionaries containing bottle information
+    """
+    try:
+        # Prepare query parameters
+        query_params = {"database_id": database_id}
+        if filter_obj:
+            query_params["filter"] = filter_obj
+            
+        # Execute the initial query
+        response = notion_client.databases.query(**query_params)
+        
+        # Extract bottle information from the results
+        bottles = [parse_notion_row_to_bottle(result) for result in response.get('results', [])]
+        
+        # Get additional pages if there are more results
+        while response.get('has_more', False):
+            next_cursor = response.get('next_cursor')
+            query_params["start_cursor"] = next_cursor
+            response = notion_client.databases.query(**query_params)
+            
+            # Add additional bottles to the list
+            bottles.extend([parse_notion_row_to_bottle(result) for result in response.get('results', [])])
+        
+        return bottles
+    
+    except Exception as e:
+        print(f"Error querying Notion database: {e}")
+        return []
+
 def get_all_type_tags(notion_client, database_id):
     """
     Get all available tags under the 'Type' column.
@@ -35,42 +139,16 @@ def get_all_type_tags(notion_client, database_id):
         A sorted list of unique type tags
     """
     try:
-        # Query the database with no filter to get all entries
-        response = notion_client.databases.query(
-            database_id=database_id
-        )
+        # Query all bottles
+        bottles = query_notion_database(notion_client, database_id)
         
-        # Extract all type tags from the results
-        all_tags = []
-        for result in response.get('results', []):
-            properties = result.get('properties', {})
-            type_property = properties.get('Type', {})
-            multi_select = type_property.get('multi_select', [])
-            
-            for tag in multi_select:
-                tag_name = tag.get('name')
-                if tag_name and tag_name not in all_tags:
-                    all_tags.append(tag_name)
+        # Extract all unique tags
+        all_tags = set()
+        for bottle in bottles:
+            for tag in bottle['type']:
+                all_tags.add(tag)
         
-        # Get additional pages if there are more results
-        while response.get('has_more', False):
-            next_cursor = response.get('next_cursor')
-            response = notion_client.databases.query(
-                database_id=database_id,
-                start_cursor=next_cursor
-            )
-            
-            for result in response.get('results', []):
-                properties = result.get('properties', {})
-                type_property = properties.get('Type', {})
-                multi_select = type_property.get('multi_select', [])
-                
-                for tag in multi_select:
-                    tag_name = tag.get('name')
-                    if tag_name and tag_name not in all_tags:
-                        all_tags.append(tag_name)
-        
-        # Sort the tags alphabetically
+        # Return sorted list of tags
         return sorted(all_tags)
     
     except Exception as e:
@@ -113,73 +191,7 @@ def query_bottles_by_type(notion_client, database_id, type_tags):
             filter_obj = filter_conditions[0]
         
         # Query the database with the filter
-        response = notion_client.databases.query(
-            database_id=database_id,
-            filter=filter_obj
-        )
-        
-        # Extract bottle information from the results
-        bottles = []
-        for result in response.get('results', []):
-            properties = result.get('properties', {})
-            
-            # Extract name
-            name_property = properties.get('Name', {})
-            title = name_property.get('title', [])
-            name = title[0].get('text', {}).get('content', '') if title else ''
-            
-            # Extract type tags
-            type_property = properties.get('Type', {})
-            multi_select = type_property.get('multi_select', [])
-            types = [tag.get('name') for tag in multi_select]
-            
-            # Extract notes if available
-            notes_property = properties.get('Notes', {})
-            rich_text = notes_property.get('rich_text', [])
-            notes = rich_text[0].get('text', {}).get('content', '') if rich_text else ''
-            
-            # Add bottle to results
-            bottles.append({
-                'name': name,
-                'type': types,
-                'notes': notes
-            })
-        
-        # Get additional pages if there are more results
-        while response.get('has_more', False):
-            next_cursor = response.get('next_cursor')
-            response = notion_client.databases.query(
-                database_id=database_id,
-                filter=filter_obj,
-                start_cursor=next_cursor
-            )
-            
-            for result in response.get('results', []):
-                properties = result.get('properties', {})
-                
-                # Extract name
-                name_property = properties.get('Name', {})
-                title = name_property.get('title', [])
-                name = title[0].get('text', {}).get('content', '') if title else ''
-                
-                # Extract type tags
-                type_property = properties.get('Type', {})
-                multi_select = type_property.get('multi_select', [])
-                types = [tag.get('name') for tag in multi_select]
-                
-                # Extract notes if available
-                notes_property = properties.get('Notes', {})
-                rich_text = notes_property.get('rich_text', [])
-                notes = rich_text[0].get('text', {}).get('content', '') if rich_text else ''
-                
-                # Add bottle to results
-                bottles.append({
-                    'name': name,
-                    'type': types,
-                    'notes': notes
-                })
-        
-        return bottles
+        return query_notion_database(notion_client, database_id, filter_obj)
     
     except Exception as e:
         print(f"Error querying bottles by type: {e}")
@@ -211,73 +223,7 @@ def query_bottles_by_name(notion_client, database_id, name_query):
         }
         
         # Query the database with the filter
-        response = notion_client.databases.query(
-            database_id=database_id,
-            filter=filter_obj
-        )
-        
-        # Extract bottle information from the results
-        bottles = []
-        for result in response.get('results', []):
-            properties = result.get('properties', {})
-            
-            # Extract name
-            name_property = properties.get('Name', {})
-            title = name_property.get('title', [])
-            name = title[0].get('text', {}).get('content', '') if title else ''
-            
-            # Extract type tags
-            type_property = properties.get('Type', {})
-            multi_select = type_property.get('multi_select', [])
-            types = [tag.get('name') for tag in multi_select]
-            
-            # Extract notes if available
-            notes_property = properties.get('Notes', {})
-            rich_text = notes_property.get('rich_text', [])
-            notes = rich_text[0].get('text', {}).get('content', '') if rich_text else ''
-            
-            # Add bottle to results
-            bottles.append({
-                'name': name,
-                'type': types,
-                'notes': notes
-            })
-        
-        # Get additional pages if there are more results
-        while response.get('has_more', False):
-            next_cursor = response.get('next_cursor')
-            response = notion_client.databases.query(
-                database_id=database_id,
-                filter=filter_obj,
-                start_cursor=next_cursor
-            )
-            
-            for result in response.get('results', []):
-                properties = result.get('properties', {})
-                
-                # Extract name
-                name_property = properties.get('Name', {})
-                title = name_property.get('title', [])
-                name = title[0].get('text', {}).get('content', '') if title else ''
-                
-                # Extract type tags
-                type_property = properties.get('Type', {})
-                multi_select = type_property.get('multi_select', [])
-                types = [tag.get('name') for tag in multi_select]
-                
-                # Extract notes if available
-                notes_property = properties.get('Notes', {})
-                rich_text = notes_property.get('rich_text', [])
-                notes = rich_text[0].get('text', {}).get('content', '') if rich_text else ''
-                
-                # Add bottle to results
-                bottles.append({
-                    'name': name,
-                    'type': types,
-                    'notes': notes
-                })
-        
-        return bottles
+        return query_notion_database(notion_client, database_id, filter_obj)
     
     except Exception as e:
         print(f"Error querying bottles by name: {e}")
@@ -309,73 +255,7 @@ def query_bottles_by_notes(notion_client, database_id, notes_query):
         }
         
         # Query the database with the filter
-        response = notion_client.databases.query(
-            database_id=database_id,
-            filter=filter_obj
-        )
-        
-        # Extract bottle information from the results
-        bottles = []
-        for result in response.get('results', []):
-            properties = result.get('properties', {})
-            
-            # Extract name
-            name_property = properties.get('Name', {})
-            title = name_property.get('title', [])
-            name = title[0].get('text', {}).get('content', '') if title else ''
-            
-            # Extract type tags
-            type_property = properties.get('Type', {})
-            multi_select = type_property.get('multi_select', [])
-            types = [tag.get('name') for tag in multi_select]
-            
-            # Extract notes if available
-            notes_property = properties.get('Notes', {})
-            rich_text = notes_property.get('rich_text', [])
-            notes = rich_text[0].get('text', {}).get('content', '') if rich_text else ''
-            
-            # Add bottle to results
-            bottles.append({
-                'name': name,
-                'type': types,
-                'notes': notes
-            })
-        
-        # Get additional pages if there are more results
-        while response.get('has_more', False):
-            next_cursor = response.get('next_cursor')
-            response = notion_client.databases.query(
-                database_id=database_id,
-                filter=filter_obj,
-                start_cursor=next_cursor
-            )
-            
-            for result in response.get('results', []):
-                properties = result.get('properties', {})
-                
-                # Extract name
-                name_property = properties.get('Name', {})
-                title = name_property.get('title', [])
-                name = title[0].get('text', {}).get('content', '') if title else ''
-                
-                # Extract type tags
-                type_property = properties.get('Type', {})
-                multi_select = type_property.get('multi_select', [])
-                types = [tag.get('name') for tag in multi_select]
-                
-                # Extract notes if available
-                notes_property = properties.get('Notes', {})
-                rich_text = notes_property.get('rich_text', [])
-                notes = rich_text[0].get('text', {}).get('content', '') if rich_text else ''
-                
-                # Add bottle to results
-                bottles.append({
-                    'name': name,
-                    'type': types,
-                    'notes': notes
-                })
-        
-        return bottles
+        return query_notion_database(notion_client, database_id, filter_obj)
     
     except Exception as e:
         print(f"Error querying bottles by notes: {e}")
@@ -394,71 +274,7 @@ def get_all_bottles(notion_client, database_id):
     """
     try:
         # Query the database with no filter to get all entries
-        response = notion_client.databases.query(
-            database_id=database_id
-        )
-        
-        # Extract bottle information from the results
-        bottles = []
-        for result in response.get('results', []):
-            properties = result.get('properties', {})
-            
-            # Extract name
-            name_property = properties.get('Name', {})
-            title = name_property.get('title', [])
-            name = title[0].get('text', {}).get('content', '') if title else ''
-            
-            # Extract type tags
-            type_property = properties.get('Type', {})
-            multi_select = type_property.get('multi_select', [])
-            types = [tag.get('name') for tag in multi_select]
-            
-            # Extract notes if available
-            notes_property = properties.get('Notes', {})
-            rich_text = notes_property.get('rich_text', [])
-            notes = rich_text[0].get('text', {}).get('content', '') if rich_text else ''
-            
-            # Add bottle to results
-            bottles.append({
-                'name': name,
-                'type': types,
-                'notes': notes
-            })
-        
-        # Get additional pages if there are more results
-        while response.get('has_more', False):
-            next_cursor = response.get('next_cursor')
-            response = notion_client.databases.query(
-                database_id=database_id,
-                start_cursor=next_cursor
-            )
-            
-            for result in response.get('results', []):
-                properties = result.get('properties', {})
-                
-                # Extract name
-                name_property = properties.get('Name', {})
-                title = name_property.get('title', [])
-                name = title[0].get('text', {}).get('content', '') if title else ''
-                
-                # Extract type tags
-                type_property = properties.get('Type', {})
-                multi_select = type_property.get('multi_select', [])
-                types = [tag.get('name') for tag in multi_select]
-                
-                # Extract notes if available
-                notes_property = properties.get('Notes', {})
-                rich_text = notes_property.get('rich_text', [])
-                notes = rich_text[0].get('text', {}).get('content', '') if rich_text else ''
-                
-                # Add bottle to results
-                bottles.append({
-                    'name': name,
-                    'type': types,
-                    'notes': notes
-                })
-        
-        return bottles
+        return query_notion_database(notion_client, database_id)
     
     except Exception as e:
         print(f"Error getting all bottles: {e}")
@@ -477,19 +293,9 @@ def main():
     parser.add_argument('--all', action='store_true', help='List all bottles in the inventory')
     args = parser.parse_args()
     
-    # Get the project root directory
-    script_dir = Path(__file__).resolve().parent
-    project_root = script_dir.parent.parent
-    
-    # Load configuration
-    config_path = project_root / "etc" / "config.toml"
-    config = load_config(config_path)
-    
     # Get Notion API key and database ID
-    notion_api_key = config["api_keys"]["notion"]
-    bottle_db_id = config["notion"]["bottle_inventory_db"]
-    
-    # Create Notion client
+    notion_api_key = NOTION_API_KEY
+    bottle_db_id = BOTTLE_INVENTORY_NOTION_DB
     notion = create_notion_client(notion_api_key)
     
     # If no arguments provided, show help
@@ -518,9 +324,7 @@ def main():
         bottles = query_bottles_by_type(notion, bottle_db_id, args.query)
         print(f"Found {len(bottles)} bottles:")
         for bottle in bottles:
-            print(f"  - {bottle['name']} ({', '.join(bottle['type'])})")
-            if bottle['notes']:
-                print(f"    Notes: {bottle['notes']}")
+            print(format_bottle_object(bottle))
     
     # Query bottles by name
     if args.name:
@@ -528,9 +332,7 @@ def main():
         bottles = query_bottles_by_name(notion, bottle_db_id, args.name)
         print(f"Found {len(bottles)} bottles:")
         for bottle in bottles:
-            print(f"  - {bottle['name']} ({', '.join(bottle['type'])})")
-            if bottle['notes']:
-                print(f"    Notes: {bottle['notes']}")
+            print(format_bottle_object(bottle))
     
     # Query bottles by notes
     if args.notes:
@@ -538,9 +340,7 @@ def main():
         bottles = query_bottles_by_notes(notion, bottle_db_id, args.notes)
         print(f"Found {len(bottles)} bottles:")
         for bottle in bottles:
-            print(f"  - {bottle['name']} ({', '.join(bottle['type'])})")
-            if bottle['notes']:
-                print(f"    Notes: {bottle['notes']}")
+            print(format_bottle_object(bottle))
     
     # List all bottles
     if args.all:
@@ -548,9 +348,7 @@ def main():
         bottles = get_all_bottles(notion, bottle_db_id)
         print(f"Found {len(bottles)} bottles:")
         for bottle in bottles:
-            print(f"  - {bottle['name']} ({', '.join(bottle['type'])})")
-            if bottle['notes']:
-                print(f"    Notes: {bottle['notes']}")
+            print(format_bottle_object(bottle))
 
 if __name__ == "__main__":
     main()
