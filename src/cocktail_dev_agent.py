@@ -22,7 +22,7 @@ cocktail_spec_finder = Agent(
     name="Cocktail Spec Finder",
     instructions=cocktail_spec_finder_agent_config["cocktail_spec_finder"]["instructions"],
     handoff_description="Finds cocktail specs from reputible sources from the internet.",
-    tools=[WebSearchTool(search_context_size="low")],
+    tools=[WebSearchTool(search_context_size="medium")],
     model=cocktail_spec_finder_agent_config["cocktail_spec_finder"]["model"],
     model_settings=ModelSettings(temperature=cocktail_spec_finder_agent_config["cocktail_spec_finder"]["temperature"])
 )
@@ -32,7 +32,7 @@ flavor_affinity_agent = Agent(
     name="Flavor Affinity Agent",
     instructions=flavor_affinity_config["flavor_affinity_agent"]["instructions"],
     handoff_description="Finds flavor affinities from the internet.",
-    tools=[WebSearchTool(search_context_size="low")],
+    tools=[WebSearchTool(search_context_size="medium")],
     model=flavor_affinity_config["flavor_affinity_agent"]["model"],
     model_settings=ModelSettings(temperature=flavor_affinity_config["flavor_affinity_agent"]["temperature"])
 )
@@ -42,7 +42,7 @@ cocktail_spec_analyzer = Agent(
     name="Cocktail Spec Analyzer",
     instructions=cocktail_spec_analyzer_agent_config["cocktail_spec_analyzer"]["instructions"],
     handoff_description="Analyzes a cocktail spec and provides feedback.",
-    tools=[WebSearchTool(search_context_size="low")],
+    tools=[WebSearchTool(search_context_size="medium")],
     model=cocktail_spec_analyzer_agent_config["cocktail_spec_analyzer"]["model"],
     model_settings=ModelSettings(temperature=cocktail_spec_analyzer_agent_config["cocktail_spec_analyzer"]["temperature"])
 )

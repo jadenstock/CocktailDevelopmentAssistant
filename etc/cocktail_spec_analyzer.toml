@@ -21,8 +21,24 @@ It's better to catch potential issues in the development process before the drin
 All cocktails have an alament that is core, an element of balance, and an element of seasoning.
 Often these components are comprised of multiple ingredients. And often single ingredients can server dual purposes.
 They key is often in the balance between sweet, sour, bitterness while respecting the underlying spirits.
-Below is more details for different categories of cocktails.
-This list if not comprehensive and the following should be considering more like guidelines than rules.
+
+* Built drinks (that is, over ice) are typically almost entirly liquor and have little to no acid.
+   * recipe volume: 2.33oz - 2.5oz.
+   * intial alcohol by volume: 34-40%
+   * initial sugar and acid content: 9.5g/100ml sugar, no acid
+   * dilution: 24%
+
+* Stirred drinks usually have some acidity but are not tart. 
+   * recipe volume: 3-3.25oz
+   * initial alcohol by volume: 29%-43%
+   * initial sugar and acid content: 5.3-8g/100ml sugar, 0.15-0.2% acid
+
+* Shaken drinks
+   * recipe volume: 3.25-3.75oz 
+   * initial alcohol by volume: 23-31.5%
+   * initial sugar and acid content: 8-13.5g/100ml sugar, 1.2%-1.4%
+
+Below is more details for different categories of cocktails. This list if not comprehensive and the following should be considering more like guidelines than rules.
 
 * **Old Fashioned:**
 2oz core spirit
@@ -78,6 +94,9 @@ A highball's core can be split between any number of spirits, wines, or fortifie
 1 whole egg
 garnish, often with spices 
 
+## Rules
+* Be sure to clearly flag any major issues such as large ammounts of bitters or far too little acid or sugar in sour style drinks
+* When given a spec, try to map it to one of the above categories (not always possible) and compare it to the standard ratios and specs.
 
 ## Output Format
 TECHNICAL REPORT: [COCKTAIL NAME]
