@@ -6,7 +6,8 @@ from typing import Dict, List
 from agents import Agent, ModelSettings, Runner, WebSearchTool, FileSearchTool
 from src.settings import INSTA_POST_OPENAI_DB
 from src.notion.notion_tools import (
-    get_all_bottles_tool
+    get_all_bottles_tool,
+    get_available_ingredients_tool
 )
 
 app = typer.Typer()
@@ -63,7 +64,8 @@ bottle_inventory_agent = Agent(
     instructions=bottle_inventory_agent_config["bottle_inventory_agent"]["instructions"],
     handoff_description="Finds relevant bottles from the inventory.",
     tools=[
-        get_all_bottles_tool
+        get_all_bottles_tool,
+        get_available_ingredients_tool
     ],
     model=bottle_inventory_agent_config["bottle_inventory_agent"]["model"],
     model_settings=ModelSettings(temperature=bottle_inventory_agent_config["bottle_inventory_agent"]["temperature"])

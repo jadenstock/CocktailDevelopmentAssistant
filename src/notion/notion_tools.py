@@ -4,8 +4,14 @@ from agents import function_tool
 from src.settings import NOTION_API_KEY, BOTTLE_INVENTORY_NOTION_DB
 from src.notion.query_inventory import (
     create_notion_client,
-    query_bottles_by_type, query_bottles_by_name,
-    query_bottles_by_notes, get_all_bottles, get_all_type_tags
+    query_bottles_by_type,
+    query_bottles_by_name,
+    query_bottles_by_notes,
+    get_all_bottles,
+    get_all_type_tags,
+    get_all_ingredients,
+    format_bottles,
+    format_ingredients
 )
 
 def get_notion_client_and_db():
@@ -42,11 +48,15 @@ async def get_all_bottles_tool() -> str:
     bottles = await asyncio.to_thread(get_all_bottles, notion, db_id)
     return format_bottles(bottles)
 
+@function_tool
+async def get_available_ingredients_tool() -> str:
+    """List all available ingredients (syrups, juices, etc) that we currently have."""
+    notion, _ = get_notion_client_and_db()
+    ingredients = await asyncio.to_thread(get_all_ingredients, notion, SYRUPS_AND_JUICES_NOTION_DB)
+    return format_ingredients(ingredients)
+
+
 def format_bottles(bottles: list) -> str:
     """Format bottle data for LLM consumption"""
     if not bottles: return "No matching bottles found"
-    return "\n".join(
-        f"- {b['name']} ({', '.join(b['type'])})" + 
-        (f"\n  Notes: {b['notes']}" if b['notes'] else "")
-        for b in bottles
-    )
+    return format_bottles(bottles)

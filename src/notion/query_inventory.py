@@ -29,18 +29,28 @@ def create_notion_client(api_key):
     return Client(auth=api_key)
 
 
-def format_bottle_object(bottle):
-    """Format a bottle object for display."""
-    bottle_str = f"  - {bottle['name']} ({', '.join(bottle['type'])})"
-    if bottle['almost_gone']:
-        bottle_str += " (almost gone)"
-    if bottle['not_for_mixing']:
-        bottle_str += " (not for mixing)"
-    if bottle['notes']:
-        bottle_str += f"\n    Notes: {bottle['notes']}"
-    if bottle['technical_notes']:
-        bottle_str += f"\n    Technical Notes: {bottle['technical_notes']}"
+def format_bottles(bottles):
+    """Format a list bottle objects."""
+    bottle_str = ""
+    for bottle in bottles:
+        bottle_str += f"  - {bottle['name']} ({', '.join(bottle['type'])})"
+        if bottle['almost_gone']:
+            bottle_str += " (almost gone)"
+        if bottle['not_for_mixing']:
+            bottle_str += " (not for mixing)"
+        if bottle['notes']:
+            bottle_str += f"\n    Notes: {bottle['notes']}"
+        if bottle['technical_notes']:
+            bottle_str += f"\n    Technical Notes: {bottle['technical_notes']}"
+        bottle_str += "\n"
     return bottle_str
+
+
+def format_ingredients(ingredients):
+    """Format a list of ingredients for display."""
+    if not ingredients:
+        return "No ingredients found"
+    return "\n".join(f"- {ingredient['name']}" for ingredient in ingredients)
 
 def parse_notion_row_to_bottle(result):
     """
@@ -306,6 +316,40 @@ def get_all_bottles(notion_client, database_id):
         print(f"Error getting all bottles: {e}")
         return []
 
+
+def get_all_ingredients(notion_client, database_id):
+    """
+    Get all available ingredients from the syrups and juices database.
+    
+    Args:
+        notion_client: The Notion client instance
+        database_id: The ID of the syrups and juices database
+        
+    Returns:
+        A list of dictionaries containing ingredient information
+    """
+    try:
+        # Create filter for Have=True
+        filter_obj = {
+            "property": "Have",
+            "checkbox": {
+                "equals": True
+            }
+        }
+        
+        # Query the database using the existing function
+        results = query_notion_database(notion_client, database_id, filter_obj)
+        
+        # Convert the results to ingredients format
+        ingredients = [{'name': result['name'], 'have': True} for result in results]
+        
+        return ingredients
+    
+    except Exception as e:
+        print(f"Error getting ingredients: {e}")
+        return []
+
+
 def main():
     """Main function to run the script with command-line arguments."""
     import argparse
@@ -349,32 +393,28 @@ def main():
         print(f"Querying bottles with type: {args.query}")
         bottles = query_bottles_by_type(notion, bottle_db_id, args.query)
         print(f"Found {len(bottles)} bottles:")
-        for bottle in bottles:
-            print(format_bottle_object(bottle))
+        print(format_bottles(bottles))
     
     # Query bottles by name
     if args.name:
         print(f"Querying bottles with name containing: {args.name}")
         bottles = query_bottles_by_name(notion, bottle_db_id, args.name)
         print(f"Found {len(bottles)} bottles:")
-        for bottle in bottles:
-            print(format_bottle_object(bottle))
+        print(format_bottles(bottles))
     
     # Query bottles by notes
     if args.notes:
         print(f"Querying bottles with notes containing: {args.notes}")
         bottles = query_bottles_by_notes(notion, bottle_db_id, args.notes)
         print(f"Found {len(bottles)} bottles:")
-        for bottle in bottles:
-            print(format_bottle_object(bottle))
+        print(format_bottles(bottles))
     
     # List all bottles
     if args.all:
         print("Getting all bottles...")
         bottles = get_all_bottles(notion, bottle_db_id)
         print(f"Found {len(bottles)} bottles:")
-        for bottle in bottles:
-            print(format_bottle_object(bottle))
+        print(format_bottles(bottles))
 
 if __name__ == "__main__":
     main()
