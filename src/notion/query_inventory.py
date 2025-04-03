@@ -10,7 +10,11 @@ import sys
 from pathlib import Path
 import toml
 from notion_client import Client
-from src.settings import NOTION_API_KEY, BOTTLE_INVENTORY_NOTION_DB
+from src.settings import (
+    NOTION_API_KEY,
+    BOTTLE_INVENTORY_NOTION_DB,
+    SYRUPS_AND_JUICES_NOTION_DB
+)
 
 def load_config(config_path):
     """Load configuration from TOML file."""
@@ -87,6 +91,28 @@ def parse_notion_row_to_bottle(result):
         'almost_gone': almost_gone,
         'not_for_mixing': not_for_mixing
     }
+
+
+def parse_notion_row_to_ingredient(result):
+    """
+    Parse a Notion database row into an ingredient dictionary.
+    """
+    properties = result.get('properties', {})
+    
+    # Extract name from the text column (assuming it is formatted as a title property)
+    name_property = properties.get('Name', {})
+    title = name_property.get('title', [])
+    name = title[0].get('text', {}).get('content', '') if title else ''
+    
+    # Extract 'Have' from the toggle column (checkbox)
+    have_property = properties.get('Have', {})
+    have = have_property.get('checkbox', False)
+    
+    return {
+        'name': name,
+        'have': have
+    }
+
 
 def query_notion_database(notion_client, database_id, filter_obj=None):
     """
