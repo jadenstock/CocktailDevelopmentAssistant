@@ -2,7 +2,7 @@ from src.settings import NOTION_API_KEY, BOTTLE_INVENTORY_NOTION_DB
 from src.notion.query_inventory import create_notion_client, query_notion_database
 
 
-def update_notion_bottle(notion_client, database_id, name=None, types=None, notes_contains=None, technical_notes_contains=None,
+async def update_notion_bottle(notion_client, database_id, name=None, types=None, notes_contains=None, technical_notes_contains=None,
                          updated_notes=None, updated_technical_notes=None):
     """
     Finds and updates a Notion bottle based on flexible search criteria (with added logging).

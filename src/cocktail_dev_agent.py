@@ -127,9 +127,9 @@ bottle_researcher_agent = Agent(
     instructions=bottle_researcher_agent_config["bottle_researcher_agent"]["instructions"],
     handoff_description="Researches and updates information about bottles in the inventory.",
     tools=[
+        WebSearchTool(search_context_size="high"),
         get_all_bottles_tool,
-        update_notion_bottle_tool,
-        WebSearchTool(search_context_size="high")
+        update_notion_bottle_tool
     ],
     model=bottle_researcher_agent_config["bottle_researcher_agent"]["model"],
     model_settings=ModelSettings(temperature=bottle_researcher_agent_config["bottle_researcher_agent"]["temperature"])

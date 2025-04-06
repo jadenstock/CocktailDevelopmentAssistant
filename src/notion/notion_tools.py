@@ -70,7 +70,7 @@ async def update_notion_bottle_tool(name: str = None,
     Will fail if zero or more than one bottle matches the search criteria.
     """
     notion, db_id = get_notion_client_and_db()
-    return await update_notion_bottle(
+    result =  await update_notion_bottle(
         notion,
         db_id,
         name=name,
@@ -80,3 +80,4 @@ async def update_notion_bottle_tool(name: str = None,
         updated_notes=updated_notes,
         updated_technical_notes=updated_technical_notes
     )
+    return result
