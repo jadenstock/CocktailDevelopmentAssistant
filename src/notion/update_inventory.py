@@ -5,7 +5,7 @@ from src.notion.query_inventory import create_notion_client, query_notion_databa
 async def update_notion_bottle(notion_client, database_id, name=None, types=None, notes_contains=None, technical_notes_contains=None,
                          updated_notes=None, updated_technical_notes=None):
     """
-    Finds and updates a Notion bottle based on flexible search criteria (with added logging).
+    Finds and updates a Notion bottle based on flexible search criteria.
 
     Args:
         notion_client: The Notion client instance.
@@ -49,8 +49,6 @@ async def update_notion_bottle(notion_client, database_id, name=None, types=None
     else:
         bottle_to_update = results[0]
         page_id = bottle_to_update.get('id')
-        print(f"LOG: Found bottle: {bottle_to_update['name']} ({', '.join(bottle_to_update['type'])})")
-        print(f"LOG: Notion Page ID: {page_id}")
         if not page_id:
             return f"Error: Could not retrieve Notion page ID for '{bottle_to_update['name']}'."
 
@@ -63,26 +61,13 @@ async def update_notion_bottle(notion_client, database_id, name=None, types=None
         if not properties_to_update:
             return f"No updates provided for '{bottle_to_update['name']}'."
 
-        print(f"LOG: Properties to update: {properties_to_update}")
-
         try:
             response = notion_client.pages.update(
                 page_id=page_id,
                 properties=properties_to_update
             )
-            print(f"LOG: Notion API update response: {response}")
             update_fields = ", ".join(properties_to_update.keys())
             return f"Successfully updated '{update_fields}' for '{bottle_to_update['name']}' ({', '.join(bottle_to_update['type'])})."
         except Exception as e:
             print(f"LOG: Error during Notion API update: {e}")
             return f"Error updating '{bottle_to_update['name']}' ({', '.join(bottle_to_update['type'])}): {e}"
-
-if __name__ == "__main__":
-    print(update_notion_bottle(
-        create_notion_client(NOTION_API_KEY),
-        BOTTLE_INVENTORY_NOTION_DB,
-        types = ["canadian"],
-        notes_contains="rye based",
-        updated_notes="rye based canadian whiskey",
-        updated_technical_notes="test test test"
-        ))

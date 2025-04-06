@@ -121,7 +121,7 @@ main_agent = Agent(
     model=instructions_config["main_agent"]["model"],
 )
 
-bottle_researcher_agent_config = toml.load("etc/bottle_researcher_agent.toml")  # Assuming you'll create this config file
+bottle_researcher_agent_config = toml.load("etc/bottle_researcher_agent.toml")
 bottle_researcher_agent = Agent(
     name="Bottle Researcher",
     instructions=bottle_researcher_agent_config["bottle_researcher_agent"]["instructions"],
