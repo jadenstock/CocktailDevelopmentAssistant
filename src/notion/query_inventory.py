@@ -63,6 +63,7 @@ def parse_notion_row_to_bottle(result):
         A dictionary containing standardized bottle information
     """
     properties = result.get('properties', {})
+    bottle_id = result.get('id')
     
     # Extract name
     name_property = properties.get('Name', {})
@@ -95,6 +96,7 @@ def parse_notion_row_to_bottle(result):
     # Create and return bottle dictionary
     return {
         'name': name,
+        'id': bottle_id,
         'type': types,
         'notes': notes,
         'technical_notes': technical_notes,

@@ -1,7 +1,7 @@
 from pathlib import Path
 import asyncio
 from agents import function_tool
-from src.settings import NOTION_API_KEY, BOTTLE_INVENTORY_NOTION_DB
+from src.settings import NOTION_API_KEY, BOTTLE_INVENTORY_NOTION_DB, SYRUPS_AND_JUICES_NOTION_DB
 from src.notion.query_inventory import (
     create_notion_client,
     query_bottles_by_type,
@@ -13,6 +13,7 @@ from src.notion.query_inventory import (
     format_bottles,
     format_ingredients
 )
+from src.notion.update_inventory import update_notion_bottle
 
 def get_notion_client_and_db():
     """Helper to load config and create Notion client/database ID."""
@@ -55,8 +56,27 @@ async def get_available_ingredients_tool() -> str:
     ingredients = await asyncio.to_thread(get_all_ingredients, notion, SYRUPS_AND_JUICES_NOTION_DB)
     return format_ingredients(ingredients)
 
-
-def format_bottles(bottles: list) -> str:
-    """Format bottle data for LLM consumption"""
-    if not bottles: return "No matching bottles found"
-    return format_bottles(bottles)
+@function_tool
+async def update_notion_bottle_tool(name: str = None,
+                                    types: list[str] = None,
+                                    notes_contains: str = None,
+                                    technical_notes_contains: str = None,
+                                    updated_notes: str = None,
+                                    updated_technical_notes: str = None) -> str:
+    """
+    Finds and updates a Notion bottle based on flexible search criteria.
+    Specify search criteria (name, types, notes_contains, technical_notes_contains)
+    and the fields to update (updated_notes, updated_technical_notes).
+    Will fail if zero or more than one bottle matches the search criteria.
+    """
+    notion, db_id = get_notion_client_and_db()
+    return await update_notion_bottle(
+        notion,
+        db_id,
+        name=name,
+        types=types,
+        notes_contains=notes_contains,
+        technical_notes_contains=technical_notes_contains,
+        updated_notes=updated_notes,
+        updated_technical_notes=updated_technical_notes
+    )

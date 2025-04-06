@@ -11,3 +11,6 @@ list-bottles-by-type:
 
 list-bottles-by-notes:
 	set PYTHONPATH=. && python src/notion/query_inventory.py --notes $(notes)
+
+test-update-inventory:
+	set PYTHONPATH=. && python src/notion/update_inventory.py

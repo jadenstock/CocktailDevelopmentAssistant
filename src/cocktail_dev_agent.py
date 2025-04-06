@@ -7,7 +7,8 @@ from agents import Agent, ModelSettings, Runner, WebSearchTool, FileSearchTool
 from src.settings import INSTA_POST_OPENAI_DB
 from src.notion.notion_tools import (
     get_all_bottles_tool,
-    get_available_ingredients_tool
+    get_available_ingredients_tool,
+    update_notion_bottle_tool
 )
 
 app = typer.Typer()
@@ -120,6 +121,20 @@ main_agent = Agent(
     model=instructions_config["main_agent"]["model"],
 )
 
+bottle_researcher_agent_config = toml.load("etc/bottle_researcher_agent.toml")  # Assuming you'll create this config file
+bottle_researcher_agent = Agent(
+    name="Bottle Researcher",
+    instructions=bottle_researcher_agent_config["bottle_researcher_agent"]["instructions"],
+    handoff_description="Researches and updates information about bottles in the inventory.",
+    tools=[
+        get_all_bottles_tool,
+        update_notion_bottle_tool,
+        WebSearchTool(search_context_size="high")
+    ],
+    model=bottle_researcher_agent_config["bottle_researcher_agent"]["model"],
+    model_settings=ModelSettings(temperature=bottle_researcher_agent_config["bottle_researcher_agent"]["temperature"])
+)
+
 # === Create a Mapping of Agent Names ===
 AGENTS = {
     "main": main_agent,
@@ -129,6 +144,7 @@ AGENTS = {
     "cocktail_naming": cocktail_naming_agent,
     "bottle_inventory": bottle_inventory_agent,
     "instagram_post": instagram_post_agent,
+    "bottle_researcher": bottle_researcher_agent,
 }
 
 @app.command()
