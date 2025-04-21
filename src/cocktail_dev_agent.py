@@ -101,10 +101,8 @@ main_agent = Agent(
             tool_name="find_flavor_affinities",
             tool_description="Find flaor affinities given one or more flavors.",
         ),
-        bottle_inventory_agent.as_tool(
-            tool_name="find_bottles_in_inventory",
-            tool_description="Find relevant bottles from the inventory",
-        ),
+        get_all_bottles_tool,
+        get_available_ingredients_tool,
         cocktail_spec_analyzer.as_tool(
             tool_name="analyze_cocktail_spec",
             tool_description="Analyze a cocktail spec to get feedback.",
@@ -127,7 +125,7 @@ bottle_researcher_agent = Agent(
     instructions=bottle_researcher_agent_config["bottle_researcher_agent"]["instructions"],
     handoff_description="Researches and updates information about bottles in the inventory.",
     tools=[
-        WebSearchTool(search_context_size="high"),
+        WebSearchTool(search_context_size="medium"),
         get_all_bottles_tool,
         update_notion_bottle_tool
     ],
