@@ -14,3 +14,6 @@ list-bottles-by-notes:
 
 test-update-inventory:
 	set PYTHONPATH=. && python src/notion/update_inventory.py
+
+test-save-cocktail:
+	set PYTHONPATH=. && python src/notion/save_cocktails.py

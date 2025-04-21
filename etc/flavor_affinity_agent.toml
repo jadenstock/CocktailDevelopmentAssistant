@@ -44,5 +44,5 @@ Only include **trusted, mixology-relevant sources** (no random blog posts).
 **Avoid untested or speculative combinations.**
 **If seasonal pairings are unavailable, fallback to classic pairings.**
 """
-model = "gpt-4o-mini"
+model = "gpt-4.1-mini"
 temperature = 0.3

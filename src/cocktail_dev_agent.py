@@ -8,6 +8,7 @@ from src.settings import INSTA_POST_OPENAI_DB
 from src.notion.notion_tools import (
     get_all_bottles_tool,
     get_available_ingredients_tool,
+    save_cocktail_to_notion_tool,
     update_notion_bottle_tool
 )
 
@@ -114,7 +115,8 @@ main_agent = Agent(
         instagram_post_agent.as_tool(
             tool_name="find_relevant_instagram_posts",
             tool_description="Find relevant historical instagram posts for previous projects.",
-        )
+        ),
+        save_cocktail_to_notion_tool
     ],
     model=instructions_config["main_agent"]["model"],
 )

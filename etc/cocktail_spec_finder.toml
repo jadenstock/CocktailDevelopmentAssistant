@@ -27,5 +27,5 @@ You should stick to highly trusted sources and not include anything from less re
 - DO NOT include techniques unless they are novel or unique
 - ALWAYS prioritize recipes with exact measurements (no "parts")
 """
-model = "gpt-4o-mini"
+model = "gpt-4.1-mini"
 temperature = 0.1
