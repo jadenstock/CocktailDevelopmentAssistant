@@ -11,6 +11,7 @@ notion = "YOUR_NOTION_API_KEY"
 bottle_inventory_db = ""
 syrups_and_juices_db = ""
 cocktail_projects_db = ""
+wine_db = ""
 
 [openai]
 insta_post_vector_db = ""

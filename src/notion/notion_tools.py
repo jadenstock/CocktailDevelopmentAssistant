@@ -1,7 +1,13 @@
 from pathlib import Path
 import asyncio
 from agents import function_tool
-from src.settings import NOTION_API_KEY, BOTTLE_INVENTORY_NOTION_DB, SYRUPS_AND_JUICES_NOTION_DB, COCKTAIL_PROJECTS_NOTION_DB
+from src.settings import (
+    NOTION_API_KEY,
+    BOTTLE_INVENTORY_NOTION_DB,
+    SYRUPS_AND_JUICES_NOTION_DB,
+    COCKTAIL_PROJECTS_NOTION_DB,
+    WINES_NOTION_DB
+)
 from src.notion.query_inventory import (
     create_notion_client,
     query_bottles_by_type,
@@ -10,8 +16,10 @@ from src.notion.query_inventory import (
     get_all_bottles,
     get_all_type_tags,
     get_all_ingredients,
+    get_available_wines,
     format_bottles,
-    format_ingredients
+    format_ingredients,
+    format_wines
 )
 from src.notion.update_inventory import update_notion_bottle
 from src.notion.save_cocktails import create_cocktail_project_page
@@ -56,6 +64,14 @@ async def get_available_ingredients_tool() -> str:
     notion, _ = get_notion_client_and_db()
     ingredients = await asyncio.to_thread(get_all_ingredients, notion, SYRUPS_AND_JUICES_NOTION_DB)
     return format_ingredients(ingredients)
+
+@function_tool
+async def get_available_wines_tool() -> str:
+    """List all available wines that we currently have."""
+    notion, _ = get_notion_client_and_db()
+    wines = await asyncio.to_thread(get_available_wines, notion, WINES_NOTION_DB)
+    return format_wines(wines)
+
 
 @function_tool
 async def update_notion_bottle_tool(name: str = None,

@@ -13,7 +13,8 @@ from notion_client import Client
 from src.settings import (
     NOTION_API_KEY,
     BOTTLE_INVENTORY_NOTION_DB,
-    SYRUPS_AND_JUICES_NOTION_DB
+    SYRUPS_AND_JUICES_NOTION_DB,
+    WINES_NOTION_DB
 )
 
 def load_config(config_path):
@@ -51,6 +52,25 @@ def format_ingredients(ingredients):
     if not ingredients:
         return "No ingredients found"
     return "\n".join(f"- {ingredient['name']}" for ingredient in ingredients)
+
+
+def format_wines(wines):
+    """Format a list of wine objects for display."""
+    if not wines:
+        return "No wines found"
+
+    wine_str = f"{len(wines)} wines found:\n"
+    for wine in wines:
+        wine_str += f"  - {wine['name']}"
+        if wine['vintage_year']:
+            wine_str += f" ({wine['vintage_year']})"
+        if wine['notes']:
+            wine_str += f"\n    Notes: {wine['notes']}"
+        if wine['technical_notes']:
+            wine_str += f"\n    Technical Notes: {wine['technical_notes']}"
+        wine_str += "\n"
+    return wine_str
+
 
 def parse_notion_row_to_bottle(result):
     """
@@ -126,7 +146,61 @@ def parse_notion_row_to_ingredient(result):
     }
 
 
-def query_notion_database(notion_client, database_id, filter_obj=None):
+def parse_notion_row_to_wine(result):
+    """
+    Parse a Notion database row into a wine dictionary.
+
+    Args:
+        result: A single result object from a Notion database query
+
+    Returns:
+        A dictionary containing standardized wine information
+    """
+    properties = result.get('properties', {})
+    wine_id = result.get('id')
+
+    # Extract name
+    name_property = properties.get('Name', {})
+    title = name_property.get('title', [])
+    name = title[0].get('text', {}).get('content', '') if title else ''
+
+    # Extract notes if available
+    notes_property = properties.get('Notes', {})
+    rich_text = notes_property.get('rich_text', [])
+    notes = rich_text[0].get('text', {}).get('content', '') if rich_text else ''
+
+    # Extract technical notes if available - concatenate all rich text segments
+    technical_notes_property = properties.get('Technical Notes', {})
+    rich_text = technical_notes_property.get('rich_text', [])
+    technical_notes = ''.join([segment.get('text', {}).get('content', '') for segment in rich_text])
+
+    # Extract vintage year (number)
+    vintage_year_property = properties.get('Vintage Year', {})
+    vintage_year = vintage_year_property.get('number', None)
+
+    # Extract cellar toggle
+    cellar_property = properties.get('Cellar', {})
+    cellar = cellar_property.get('checkbox', False)
+
+    # Extract drank toggle
+    drank_property = properties.get('Drank', {})
+    drank = drank_property.get('checkbox', False)
+
+    return {
+        'id': wine_id,
+        'name': name,
+        'notes': notes,
+        'technical_notes': technical_notes,
+        'vintage_year': vintage_year,
+        'cellar': cellar,
+        'drank': drank
+    }
+
+
+def query_notion_database(notion_client,
+                          database_id,
+                          parse_function=parse_notion_row_to_bottle,
+                          filter_obj=None):
     """
     Query the Notion database with the provided filter and return all results.
     
@@ -146,9 +220,9 @@ def query_notion_database(notion_client, database_id, filter_obj=None):
             
         # Execute the initial query
         response = notion_client.databases.query(**query_params)
-        
+
         # Extract bottle information from the results
-        bottles = [parse_notion_row_to_bottle(result) for result in response.get('results', [])]
+        parsed_results = [parse_function(result) for result in response.get('results', [])]
         
         # Get additional pages if there are more results
         while response.get('has_more', False):
@@ -157,9 +231,9 @@ def query_notion_database(notion_client, database_id, filter_obj=None):
             response = notion_client.databases.query(**query_params)
             
             # Add additional bottles to the list
-            bottles.extend([parse_notion_row_to_bottle(result) for result in response.get('results', [])])
+            parsed_results.extend([parse_function(result) for result in response.get('results', [])])
         
-        return bottles
+        return parsed_results
     
     except Exception as e:
         print(f"Error querying Notion database: {e}")
@@ -340,15 +414,62 @@ def get_all_ingredients(notion_client, database_id):
         }
         
         # Query the database using the existing function
-        results = query_notion_database(notion_client, database_id, filter_obj)
+        ingredients = query_notion_database(notion_client,
+                                        database_id,
+                                        parse_function=parse_notion_row_to_ingredient,
+                                        filter_obj=filter_obj)
         
         # Convert the results to ingredients format
-        ingredients = [{'name': result['name'], 'have': True} for result in results]
-        
+        # ingredients = [{'name': result['name'], 'have': True} for result in results]
+        # ingredients = [{'name': result['name'], 'have': True} for result in results
+
         return ingredients
     
     except Exception as e:
         print(f"Error getting ingredients: {e}")
+        return []
+
+
+def get_available_wines(notion_client, database_id):
+    """
+    Get wines that are neither in the cellar nor marked as drank.
+
+    Args:
+        notion_client: The Notion client instance
+        database_id: The ID of the wine database
+
+    Returns:
+        A list of dictionaries containing wine information
+    """
+    try:
+        # Filter: Cellar == False AND Drank == False
+        filter_obj = {
+            "and": [
+                {
+                    "property": "Cellar",
+                    "checkbox": {
+                        "equals": False
+                    }
+                },
+                {
+                    "property": "Drank",
+                    "checkbox": {
+                        "equals": False
+                    }
+                }
+            ]
+        }
+
+        # Query the database using the existing function
+        wines = query_notion_database(notion_client,
+                                        database_id,
+                                        parse_function=parse_notion_row_to_wine,
+                                        filter_obj=filter_obj)
+
+        return wines
+
+    except Exception as e:
+        print(f"Error getting uncategorized wines: {e}")
         return []
 
 
@@ -363,6 +484,8 @@ def main():
     parser.add_argument('--name', help='Query bottles by name (e.g., --name "Campari")')
     parser.add_argument('--notes', help='Query bottles by notes (e.g., --notes "bitter")')
     parser.add_argument('--all', action='store_true', help='List all bottles in the inventory')
+    parser.add_argument('--wines', action='store_true', help='List all wines in the inventory')
+    parser.add_argument('--ingredients', action='store_true', help='List all ingredients in the inventory')
     args = parser.parse_args()
     
     # Get Notion API key and database ID
@@ -371,7 +494,7 @@ def main():
     notion = create_notion_client(notion_api_key)
     
     # If no arguments provided, show help
-    if not args.tags and not args.query and not args.name and not args.notes and not args.all:
+    if not args.tags and not args.query and not args.name and not args.notes and not args.all and not args.wines and not args.ingredients:
         parser.print_help()
         print("\nExamples:")
         print("  List all type tags:  python query_inventory.py --tags")
@@ -380,6 +503,8 @@ def main():
         print("  Query by name:       python query_inventory.py --name \"Campari\"")
         print("  Query by notes:      python query_inventory.py --notes \"bitter\"")
         print("  List all bottles:    python query_inventory.py --all")
+        print("  List all wines:      python query_inventory.py --wines")
+        print("  List all wines:      python query_inventory.py --ingredients")
         return
     
     # List all type tags
@@ -417,6 +542,20 @@ def main():
         bottles = get_all_bottles(notion, bottle_db_id)
         print(f"Found {len(bottles)} bottles:")
         print(format_bottles(bottles))
+
+    # list all ingredients
+    if args.ingredients:
+        print("Getting all ingredients...")
+        ingredients = get_all_ingredients(notion, SYRUPS_AND_JUICES_NOTION_DB)
+        print(f"Found {len(ingredients)} ingredients:")
+        print(format_ingredients(ingredients))
+
+    # list all wines
+    if args.wines:
+        print("Getting all wines...")
+        wines = get_available_wines(notion, WINES_NOTION_DB)
+        print(f"Found {len(wines)} wines:")
+        print(format_wines(wines))
 
 if __name__ == "__main__":
     main()

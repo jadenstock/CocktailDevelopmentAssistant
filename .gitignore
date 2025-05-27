@@ -6,3 +6,4 @@ to_do.md
 .venv/
 */__pycache__/*
 *.pyc
+./.idea/

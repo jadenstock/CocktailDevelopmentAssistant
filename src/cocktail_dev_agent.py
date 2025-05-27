@@ -8,6 +8,7 @@ from src.settings import INSTA_POST_OPENAI_DB
 from src.notion.notion_tools import (
     get_all_bottles_tool,
     get_available_ingredients_tool,
+    get_available_wines_tool,
     save_cocktail_to_notion_tool,
     update_notion_bottle_tool
 )
@@ -71,6 +72,16 @@ bottle_inventory_agent = Agent(
     ],
     model=bottle_inventory_agent_config["bottle_inventory_agent"]["model"],
     model_settings=ModelSettings(temperature=bottle_inventory_agent_config["bottle_inventory_agent"]["temperature"])
+)
+
+wine_agent = toml.load("etc/wine_agent.toml")
+wine_agent = Agent(
+    name="Wine Agent",
+    instructions=wine_agent["wine_agent"]["instructions"],
+    handoff_description="Finds relevant wines from the inventory.",
+    tools=[get_available_wines_tool],
+    model=wine_agent["wine_agent"]["model"],
+    model_settings=ModelSettings(temperature=wine_agent["wine_agent"]["temperature"])
 )
 
 insta_post_agent_config = toml.load("etc/instagram_post_agent.toml")
@@ -143,6 +154,7 @@ AGENTS = {
     "cocktail_spec_analyzer": cocktail_spec_analyzer,
     "cocktail_naming": cocktail_naming_agent,
     "bottle_inventory": bottle_inventory_agent,
+    "wine": wine_agent,
     "instagram_post": instagram_post_agent,
     "bottle_researcher": bottle_researcher_agent,
 }
