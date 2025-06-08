@@ -115,11 +115,55 @@ The project includes scripts to query the Notion database for inventory manageme
   make test-save-cocktail
   ```
 
+## Prompt Optimization
+
+The system includes an AI-powered prompt optimization feature that analyzes chat session performance and automatically improves agent prompts.
+
+### How It Works
+
+1. **Rate Conversations:** Use the Streamlit UI to rate chat sessions (1-5 stars) and add feedback notes
+2. **Performance Tracking:** The system analyzes ratings and identifies agents that need improvement (avg rating < 3.5/5)
+3. **AI Optimization:** A specialized optimizer agent analyzes low-rated sessions and generates improved prompts
+4. **Git-Friendly Versioning:** New prompt versions are saved as `agent_v2.toml`, `agent_v3.toml`, etc.
+
+### Usage
+
+**Via Streamlit UI:**
+- Go to the "Prompt Management" tab
+- View performance metrics for each agent
+- Click "Auto-Optimize" for agents that need improvement
+- Review and deploy the generated prompt versions
+
+**Via CLI:**
+```bash
+# Show performance summary
+python src/scripts/simple_optimizer.py performance
+
+# List agents that need optimization  
+python src/scripts/simple_optimizer.py candidates
+
+# Optimize a specific agent
+python src/scripts/simple_optimizer.py optimize main_agent
+
+# Auto-optimize all candidates
+python src/scripts/simple_optimizer.py auto
+```
+
+### Deploying Optimized Prompts
+
+1. Review the generated file (e.g., `etc/main_agent_v2.toml`)
+2. Test the new prompt version
+3. If satisfied, replace the original: `mv etc/main_agent_v2.toml etc/main_agent_instructions.toml`
+4. Commit to git: `git add . && git commit -m "Optimize main agent prompt"`
+
+The optimization process analyzes conversation patterns, identifies common issues, and generates targeted improvements while preserving the agent's core identity and successful patterns.
+
 ## Development and Contribution
 
 - The project follows a modular structure where each agent is defined with specific responsibilities.
 - Agents are configured using TOML files in the `etc/` directory that define instructions, model settings, and available tools.
 - Contributions and improvements can be made by modifying the configurations or source code in the `src/` directory.
+- The prompt optimization system allows for iterative improvement of agent performance based on real usage data.
 
 ## Conclusion
 

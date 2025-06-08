@@ -8,10 +8,14 @@ from pathlib import Path
 
 from src.cocktail_dev_agent import AGENTS
 from agents import Runner
+from src.simple_prompt_optimizer import SimplePromptOptimizer, OptimizationRequest
 
 # Create chat history directory
 CHAT_HISTORY_DIR = Path("chat_history")
 CHAT_HISTORY_DIR.mkdir(exist_ok=True)
+
+# Initialize prompt optimizer
+optimizer = SimplePromptOptimizer()
 
 def load_chat_data(session_id: str) -> Dict:
     """Load complete chat data including metadata"""
@@ -126,6 +130,8 @@ def show_chat_management():
                 
                 # Display chat info
                 st.caption(f"Created: {chat['created']} | Agent: {chat['agent']}")
+                if chat['rating']:
+                    st.caption(f"Rating: {chat['rating']}/5")
             
             with col2:
                 st.write("**Actions:**")
@@ -163,6 +169,158 @@ def show_chat_management():
                         st.session_state[f"confirm_delete_{chat['id']}"] = True
                         st.warning("Click again to confirm deletion")
 
+def show_prompt_management():
+    """Show simplified prompt management interface"""
+    st.subheader("🔧 Prompt Management")
+    
+    # Agent selection for prompt management
+    agent_names = list(AGENTS.keys())
+    selected_agent = st.selectbox("Select Agent:", agent_names, key="prompt_mgmt_agent")
+    
+    if selected_agent:
+        col1, col2 = st.columns([2, 1])
+        
+        with col1:
+            st.subheader(f"📊 Performance for {selected_agent}")
+            
+            # Get performance summary
+            performance = optimizer.get_agent_performance_summary(selected_agent)
+            
+            if performance["sessions"] > 0:
+                # Display metrics
+                col_a, col_b, col_c = st.columns(3)
+                with col_a:
+                    st.metric("Total Sessions", performance["sessions"])
+                with col_b:
+                    if performance["rated_sessions"] > 0:
+                        st.metric("Average Rating", f"{performance['average_rating']:.1f}/5")
+                    else:
+                        st.metric("Average Rating", "No ratings")
+                with col_c:
+                    st.metric("Low Rated", performance["low_rated_count"])
+                
+                # Show optimization recommendation
+                if performance["needs_optimization"]:
+                    st.warning(f"⚠️ Agent performance below 3.5/5 - optimization recommended")
+                else:
+                    st.success(f"✅ Agent performing well (avg: {performance['average_rating']:.1f}/5)")
+            else:
+                st.info("No sessions found for this agent yet")
+        
+        with col2:
+            st.subheader("🚀 Optimization")
+            
+            # Check for optimization candidates
+            candidates = optimizer.list_optimization_candidates()
+            agent_candidate = next((c for c in candidates if c["agent_name"] == selected_agent), None)
+            
+            if agent_candidate:
+                st.warning("This agent could benefit from optimization")
+                
+                low_sessions = optimizer.get_low_rated_sessions(selected_agent)
+                if low_sessions:
+                    st.write(f"**Low-rated sessions ({len(low_sessions)}):**")
+                    for session in low_sessions:
+                        with st.expander(f"⭐ {session['rating']}/5 - {session['name'][:30]}..."):
+                            st.write(f"**Notes:** {session['notes']}")
+                            st.write(f"**Messages:** {len(session['messages'])}")
+                    
+                    # Quick optimization button
+                    if st.button("🔧 Auto-Optimize", key=f"auto_opt_{selected_agent}"):
+                        request = OptimizationRequest(
+                            agent_name=selected_agent,
+                            target_sessions=[s["session_id"] for s in low_sessions[:3]],  # Max 3 sessions
+                            optimization_goals=agent_candidate["suggested_goals"]
+                        )
+                        
+                        with st.spinner("Optimizing prompt..."):
+                            try:
+                                new_file = asyncio.run(optimizer.optimize_prompt(request))
+                                st.success(f"✅ Created new version: {new_file}")
+                                st.info("💡 Commit the new file to git and update your agent to use it")
+                            except Exception as e:
+                                st.error(f"Optimization failed: {e}")
+            else:
+                st.success("No optimization needed - performance looks good!")
+        
+        # Manual optimization section
+        st.divider()
+        st.subheader("🎯 Manual Optimization")
+        
+        with st.form(f"manual_optimization_{selected_agent}"):
+            st.write("Create a custom optimization request:")
+            
+            # Get all sessions for this agent
+            all_sessions = []
+            for chat_file in Path("chat_history").glob("*.json"):
+                try:
+                    with open(chat_file, 'r') as f:
+                        data = json.load(f)
+                    metadata = data.get("metadata", {})
+                    if metadata.get("agent") == selected_agent:
+                        all_sessions.append({
+                            "id": chat_file.stem,
+                            "name": metadata.get("name", ""),
+                            "rating": metadata.get("rating"),
+                            "notes": metadata.get("notes", "")
+                        })
+                except Exception:
+                    continue
+            
+            if all_sessions:
+                # Filter to problematic sessions
+                problematic_sessions = [s for s in all_sessions if s["rating"] and s["rating"] <= 3]
+                
+                if problematic_sessions:
+                    session_options = {
+                        f"{s['name'][:40]}... (Rating: {s['rating']}/5)": s['id'] 
+                        for s in problematic_sessions
+                    }
+                    
+                    selected_sessions = st.multiselect(
+                        "Select sessions to analyze:",
+                        options=list(session_options.keys()),
+                        help="Choose sessions with issues you want to address"
+                    )
+                    
+                    optimization_goals = st.multiselect(
+                        "Optimization goals:",
+                        ["improve tool usage efficiency", "improve task completion", 
+                         "improve response clarity", "better brand alignment",
+                         "improve output formatting", "better error handling"],
+                        help="What aspects should be improved?"
+                    )
+                    
+                    optimization_notes = st.text_area(
+                        "Additional notes:",
+                        help="Specific instructions for the optimization"
+                    )
+                    
+                    if st.form_submit_button("🚀 Run Optimization"):
+                        if selected_sessions and optimization_goals:
+                            session_ids = [session_options[name] for name in selected_sessions]
+                            
+                            request = OptimizationRequest(
+                                agent_name=selected_agent,
+                                target_sessions=session_ids,
+                                optimization_goals=optimization_goals,
+                                notes=optimization_notes
+                            )
+                            
+                            with st.spinner("Running optimization..."):
+                                try:
+                                    new_file = asyncio.run(optimizer.optimize_prompt(request))
+                                    st.success(f"✅ Created new version: {new_file}")
+                                    st.info("💡 Commit the new file to git and update your agent to use it")
+                                except Exception as e:
+                                    st.error(f"Optimization failed: {e}")
+                        else:
+                            st.error("Please select sessions and optimization goals")
+                else:
+                    st.info("No problematic sessions (rating ≤3) found for manual optimization")
+            else:
+                st.info("No sessions found for this agent")
+
 async def run_agent_async(agent, prompt: str, context: Dict = None):
     """Run agent asynchronously"""
     result = await Runner.run(
@@ -194,10 +352,13 @@ def main():
         st.session_state.chat_name = ""
     
     # Main tabs
-    tab1, tab2 = st.tabs(["💬 Chat", "📋 Manage Chats"])
+    tab1, tab2, tab3 = st.tabs(["💬 Chat", "📋 Manage Chats", "🔧 Prompt Management"])
     
     with tab2:
         show_chat_management()
+    
+    with tab3:
+        show_prompt_management()
     
     with tab1:
         # Sidebar for agent selection
