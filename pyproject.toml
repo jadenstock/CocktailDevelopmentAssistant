@@ -11,4 +11,5 @@ dependencies = [
     "openai>=1.68.2",
     "openai-agents>=0.0.7",
     "typer>=0.15.2",
+    "streamlit>=1.28.0",
 ]

@@ -6,6 +6,9 @@ run-agent:
 run-wine-agent:
 	export PYTHONPATH=. && python src/cocktail_dev_agent.py --agent wine
 
+run-ui:
+	export PYTHONPATH=. && streamlit run src/ui.py
+
 list-bottles:
 	export PYTHONPATH=. && python src/notion/query_inventory.py --all
 

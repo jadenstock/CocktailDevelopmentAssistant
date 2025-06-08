@@ -7,3 +7,4 @@ to_do.md
 */__pycache__/*
 *.pyc
 ./.idea/
+chat_history/
