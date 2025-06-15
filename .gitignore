@@ -3,6 +3,7 @@ data/
 uv.lock
 */local_config.toml
 to_do.md
+claude_tasks.mdq
 .venv/
 */__pycache__/*
 *.pyc

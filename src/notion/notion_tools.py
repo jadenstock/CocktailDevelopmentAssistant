@@ -1,4 +1,3 @@
-from pathlib import Path
 import asyncio
 from agents import function_tool
 from src.settings import (
@@ -8,69 +7,147 @@ from src.settings import (
     COCKTAIL_PROJECTS_NOTION_DB,
     WINES_NOTION_DB
 )
-from src.notion.query_inventory import (
-    create_notion_client,
-    query_bottles_by_type,
-    query_bottles_by_name,
-    query_bottles_by_notes,
-    get_all_bottles,
-    get_all_type_tags,
-    get_all_ingredients,
-    get_available_wines,
-    format_bottles,
-    format_ingredients,
-    format_wines
-)
-from src.notion.update_inventory import update_notion_bottle
-from src.notion.save_cocktails import create_cocktail_project_page
 
-def get_notion_client_and_db():
-    """Helper to load config and create Notion client/database ID."""
-    notion_api_key = NOTION_API_KEY
-    bottle_db_id = BOTTLE_INVENTORY_NOTION_DB
-    return create_notion_client(notion_api_key), bottle_db_id
+# Import the new abstract framework
+from .abstract_notion_tools import get_notion_tools
+from .database_config import FilterConfig
+
+# Initialize the abstract notion tools system
+_notion_tools = None
+
+def get_abstract_tools():
+    """Get the abstract notion tools instance."""
+    global _notion_tools
+    if _notion_tools is None:
+        _notion_tools = get_notion_tools()
+    return _notion_tools
 
 @function_tool
 async def query_bottles_by_type_tool(type_tags: list[str]) -> str:
     """Query bottles by type tags. Returns formatted list of matches."""
-    notion, db_id = get_notion_client_and_db()
-    bottles = await asyncio.to_thread(query_bottles_by_type, notion, db_id, type_tags)
-    return format_bottles(bottles)
+    abstract_tools = get_abstract_tools()
+    
+    # Create custom filters for each type tag
+    type_filters = []
+    for tag in type_tags:
+        filter_config = FilterConfig(
+            column_name="Type",
+            filter_type="contains",
+            value=tag,
+            description=f"Filter by type: {tag}"
+        )
+        type_filters.append(filter_config)
+    
+    # Use the abstract query engine
+    results = await asyncio.to_thread(
+        abstract_tools.tool_generator.query_engine.query_database,
+        "bottle_inventory",
+        custom_filters=type_filters
+    )
+    
+    # Format results similar to legacy format
+    return abstract_tools.tool_generator.format_results(results, 
+        abstract_tools.database_manager.get_database("bottle_inventory"))
 
 @function_tool
 async def query_bottles_by_name_tool(name_query: str) -> str:
     """Search bottles by name. Returns formatted matches."""
-    notion, db_id = get_notion_client_and_db()
-    bottles = await asyncio.to_thread(query_bottles_by_name, notion, db_id, name_query)
-    return format_bottles(bottles)
+    abstract_tools = get_abstract_tools()
+    
+    # Use the search functionality
+    results = await asyncio.to_thread(
+        abstract_tools.tool_generator.query_engine.search_by_text,
+        "bottle_inventory",
+        name_query,
+        ["Name"]  # Search only in the Name column
+    )
+    
+    return abstract_tools.tool_generator.format_results(results, 
+        abstract_tools.database_manager.get_database("bottle_inventory"))
 
 @function_tool
 async def get_available_types_tool() -> str:
     """List all available bottle types in inventory."""
-    notion, db_id = get_notion_client_and_db()
-    types = await asyncio.to_thread(get_all_type_tags, notion, db_id)
-    return "\n- " + "\n- ".join(types) if types else "No types found"
+    abstract_tools = get_abstract_tools()
+    
+    # Get all bottles and extract unique types
+    results = await asyncio.to_thread(
+        abstract_tools.tool_generator.query_engine.get_all_rows,
+        "bottle_inventory"
+    )
+    
+    # Extract unique types
+    all_types = set()
+    for bottle in results:
+        bottle_types = bottle.get("Type", [])
+        if isinstance(bottle_types, list):
+            all_types.update(bottle_types)
+        elif bottle_types:  # Single type as string
+            all_types.add(bottle_types)
+    
+    sorted_types = sorted(all_types)
+    return "\n- " + "\n- ".join(sorted_types) if sorted_types else "No types found"
 
 @function_tool
 async def get_all_bottles_tool() -> str:
     """Retrieve all bottles in the inventory. Returns formatted list of all bottles."""
-    notion, db_id = get_notion_client_and_db()
-    bottles = await asyncio.to_thread(get_all_bottles, notion, db_id)
-    return format_bottles(bottles)
+    abstract_tools = get_abstract_tools()
+    
+    results = await asyncio.to_thread(
+        abstract_tools.tool_generator.query_engine.get_all_rows,
+        "bottle_inventory"
+    )
+    
+    return abstract_tools.tool_generator.format_results(results, 
+        abstract_tools.database_manager.get_database("bottle_inventory"))
 
 @function_tool
 async def get_available_ingredients_tool() -> str:
     """List all available ingredients (syrups, juices, etc) that we currently have."""
-    notion, _ = get_notion_client_and_db()
-    ingredients = await asyncio.to_thread(get_all_ingredients, notion, SYRUPS_AND_JUICES_NOTION_DB)
-    return format_ingredients(ingredients)
+    abstract_tools = get_abstract_tools()
+    
+    # Use the predefined "available" filter for syrups and juices
+    results = await asyncio.to_thread(
+        abstract_tools.tool_generator.query_engine.query_database,
+        "syrups_and_juices",
+        filter_names=["available"]
+    )
+    
+    # Format as simple ingredient list
+    if not results:
+        return "No ingredients found"
+    
+    ingredient_names = [result.get("Name", "Unknown") for result in results]
+    return "\n".join(f"- {name}" for name in ingredient_names)
 
 @function_tool
 async def get_available_wines_tool() -> str:
     """List all available wines that we currently have."""
-    notion, _ = get_notion_client_and_db()
-    wines = await asyncio.to_thread(get_available_wines, notion, WINES_NOTION_DB)
-    return format_wines(wines)
+    abstract_tools = get_abstract_tools()
+    
+    # Use compound filter: not in cellar AND not drank
+    not_cellar_filter = FilterConfig(
+        column_name="Cellar",
+        filter_type="equals",
+        value=False,
+        description="Not in cellar"
+    )
+    
+    not_drank_filter = FilterConfig(
+        column_name="Drank", 
+        filter_type="equals",
+        value=False,
+        description="Not consumed"
+    )
+    
+    results = await asyncio.to_thread(
+        abstract_tools.tool_generator.query_engine.query_database,
+        "wines",
+        custom_filters=[not_cellar_filter, not_drank_filter]
+    )
+    
+    return abstract_tools.tool_generator.format_results(results, 
+        abstract_tools.database_manager.get_database("wines"))
 
 
 @function_tool
@@ -86,17 +163,84 @@ async def update_notion_bottle_tool(name: str = None,
     and the fields to update (updated_notes, updated_technical_notes).
     Will fail if zero or more than one bottle matches the search criteria.
     """
-    notion, db_id = get_notion_client_and_db()
-    result =  await update_notion_bottle(
-        notion,
-        db_id,
-        name=name,
-        types=types,
-        notes_contains=notes_contains,
-        technical_notes_contains=technical_notes_contains,
-        updated_notes=updated_notes,
-        updated_technical_notes=updated_technical_notes
+    abstract_tools = get_abstract_tools()
+    
+    # Build search filters based on provided criteria
+    search_filters = []
+    
+    if name:
+        search_filters.append(FilterConfig(
+            column_name="Name",
+            filter_type="contains",
+            value=name,
+            description=f"Name contains: {name}"
+        ))
+    
+    if types:
+        for bottle_type in types:
+            search_filters.append(FilterConfig(
+                column_name="Type",
+                filter_type="contains", 
+                value=bottle_type,
+                description=f"Type contains: {bottle_type}"
+            ))
+    
+    if notes_contains:
+        search_filters.append(FilterConfig(
+            column_name="Notes",
+            filter_type="contains",
+            value=notes_contains,
+            description=f"Notes contains: {notes_contains}"
+        ))
+    
+    if technical_notes_contains:
+        search_filters.append(FilterConfig(
+            column_name="Technical Notes",
+            filter_type="contains",
+            value=technical_notes_contains,
+            description=f"Technical Notes contains: {technical_notes_contains}"
+        ))
+    
+    if not search_filters:
+        return "Error: No search criteria provided"
+    
+    # Find matching bottles
+    results = await asyncio.to_thread(
+        abstract_tools.tool_generator.query_engine.query_database,
+        "bottle_inventory",
+        custom_filters=search_filters
     )
+    
+    if len(results) == 0:
+        return "Error: No bottles found matching the search criteria"
+    elif len(results) > 1:
+        return f"Error: Found {len(results)} bottles matching criteria. Please be more specific."
+    
+    # Update the single matching bottle
+    bottle = results[0]
+    bottle_id = bottle.get('id')
+    
+    if not bottle_id:
+        return "Error: Could not get bottle ID for update"
+    
+    # Build update data
+    update_data = {}
+    if updated_notes is not None:
+        update_data["Notes"] = updated_notes
+    if updated_technical_notes is not None:
+        update_data["Technical Notes"] = updated_technical_notes
+    
+    if not update_data:
+        return "Error: No update data provided"
+    
+    # Perform the update
+    result = await asyncio.to_thread(
+        abstract_tools.tool_generator.writer_engine.update_record,
+        "bottle_inventory",
+        bottle_id,
+        update_data
+    )
+    
     return result
 
 
@@ -115,15 +259,26 @@ async def save_cocktail_to_notion_tool(name: str, spec: str, tags: list[str] = N
     Returns:
         A string indicating success or failure.
     """
-    # The create_cocktail_project_page function is synchronous,
-    # so we run it in a separate thread to avoid blocking the async event loop.
+    abstract_tools = get_abstract_tools()
+    
+    # Build the cocktail data
+    cocktail_data = {
+        "Name": name,
+        "Spec": spec
+    }
+    
+    if tags:
+        cocktail_data["Tags"] = tags
+    if preference is not None:
+        cocktail_data["Preference"] = preference
+    if notes:
+        cocktail_data["Notes"] = notes
+    
+    # Create the record using the abstract framework
     result = await asyncio.to_thread(
-        create_cocktail_project_page,
-        database_id=COCKTAIL_PROJECTS_NOTION_DB,
-        name=name,
-        spec=spec,
-        tags=tags,
-        preference=preference,
-        notes=notes
+        abstract_tools.tool_generator.writer_engine.create_record,
+        "cocktail_projects",
+        cocktail_data
     )
+    
     return result

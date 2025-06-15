@@ -1,0 +1,178 @@
+# Enhanced Notion Database Configuration
+# This file defines the schema and configuration for all Notion databases
+
+[api_keys]
+# OpenAI API key for accessing GPT models and Agents API
+openai = "YOUR_OPENAI_API_KEY"
+# Notion API key for accessing Notion databases
+notion = "YOUR_NOTION_API_KEY"
+
+[notion]
+# Legacy database IDs - these will be migrated to the new system
+bottle_inventory_db = ""
+syrups_and_juices_db = ""
+cocktail_projects_db = ""
+wine_db = ""
+
+[openai]
+insta_post_vector_db = ""
+
+[paths]
+data_dir = "data/"
+
+# Database Configurations
+[databases.bottle_inventory]
+database_id = "BOTTLE_INVENTORY_NOTION_DB"  # Will be replaced with actual ID from settings
+description = "Cocktail bottle inventory database"
+primary_key_column = "Name"
+
+[databases.bottle_inventory.columns.Name]
+type = "title"
+permission = "read_write"
+description = "The name of the bottle"
+required = true
+
+[databases.bottle_inventory.columns.Type]
+type = "multi_select"
+permission = "read_write"
+description = "Categories/types of the bottle (e.g., gin, amaro, etc.)"
+
+[databases.bottle_inventory.columns.Notes]
+type = "rich_text"
+permission = "read_write"
+description = "General notes about the bottle"
+
+[databases.bottle_inventory.columns."Technical Notes"]
+type = "rich_text"
+permission = "read_write"
+description = "Technical tasting notes and specifications"
+
+[databases.bottle_inventory.columns.almost_gone]
+type = "checkbox"
+permission = "read_write"
+description = "Indicates if the bottle is almost empty"
+
+[databases.bottle_inventory.columns.not_for_mixing]
+type = "checkbox"
+permission = "read_write"
+description = "Indicates if the bottle should not be used for mixing"
+
+[databases.bottle_inventory.filters.available]
+column_name = "almost_gone"
+filter_type = "equals"
+value = false
+description = "Bottles that are not almost gone"
+
+[databases.bottle_inventory.filters.for_mixing]
+column_name = "not_for_mixing"
+filter_type = "equals"
+value = false
+description = "Bottles suitable for mixing"
+
+[databases.syrups_and_juices]
+database_id = "SYRUPS_AND_JUICES_NOTION_DB"  # Will be replaced with actual ID from settings
+description = "Syrups and juices inventory database"
+primary_key_column = "Name"
+
+[databases.syrups_and_juices.columns.Name]
+type = "title"
+permission = "read_write"
+description = "The name of the ingredient"
+required = true
+
+[databases.syrups_and_juices.columns.Have]
+type = "checkbox"
+permission = "read_write"
+description = "Whether we currently have this ingredient"
+
+[databases.syrups_and_juices.filters.available]
+column_name = "Have"
+filter_type = "equals"
+value = true
+description = "Ingredients we currently have"
+
+[databases.cocktail_projects]
+database_id = "COCKTAIL_PROJECTS_NOTION_DB"  # Will be replaced with actual ID from settings
+description = "Cocktail projects and recipes database"
+primary_key_column = "Name"
+
+[databases.cocktail_projects.columns.Name]
+type = "title"
+permission = "read_write"
+description = "The name of the cocktail"
+required = true
+
+[databases.cocktail_projects.columns.Spec]
+type = "rich_text"
+permission = "read_write"
+description = "The recipe specification"
+required = true
+
+[databases.cocktail_projects.columns.Tags]
+type = "multi_select"
+permission = "read_write"
+description = "Descriptive tags for the cocktail"
+
+[databases.cocktail_projects.columns.Preference]
+type = "number"
+permission = "read_write"
+description = "Preference rating (1-10)"
+
+[databases.cocktail_projects.columns.Notes]
+type = "rich_text"
+permission = "read_write"
+description = "Additional notes about the cocktail"
+
+[databases.wines]
+database_id = "WINES_NOTION_DB"  # Will be replaced with actual ID from settings
+description = "Wine inventory database"
+primary_key_column = "Name"
+
+[databases.wines.columns.Name]
+type = "title"
+permission = "read_write"
+description = "The name of the wine"
+required = true
+
+[databases.wines.columns.Notes]
+type = "rich_text"
+permission = "read_write"
+description = "General notes about the wine"
+
+[databases.wines.columns."Technical Notes"]
+type = "rich_text"
+permission = "read_write"
+description = "Technical tasting notes"
+
+[databases.wines.columns."Vintage Year"]
+type = "number"
+permission = "read_write"
+description = "The vintage year of the wine"
+
+[databases.wines.columns.Cellar]
+type = "checkbox"
+permission = "read_write"
+description = "Whether the wine is stored in the cellar"
+
+[databases.wines.columns.Drank]
+type = "checkbox"
+permission = "read_write"
+description = "Whether the wine has been consumed"
+
+[databases.wines.filters.available]
+column_name = "Cellar"
+filter_type = "equals"
+value = false
+description = "Wines not in cellar"
+
+[databases.wines.filters.not_drank]
+column_name = "Drank"
+filter_type = "equals"
+value = false
+description = "Wines not yet consumed"
+
+# Example fitness database configuration for future use
+# [databases.workout_tracking]
+# database_id = ""  # Replace with actual Notion database ID when ready
+# description = "Workout tracking database for fitness assistant"
+# primary_key_column = "Date"
