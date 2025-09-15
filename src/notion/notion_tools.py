@@ -14,6 +14,7 @@ from src.notion.query_inventory import (
     query_bottles_by_name,
     query_bottles_by_notes,
     get_all_bottles,
+    get_random_bottles,
     get_all_type_tags,
     get_all_ingredients,
     get_available_wines,
@@ -56,6 +57,13 @@ async def get_all_bottles_tool() -> str:
     """Retrieve all bottles in the inventory. Returns formatted list of all bottles."""
     notion, db_id = get_notion_client_and_db()
     bottles = await asyncio.to_thread(get_all_bottles, notion, db_id)
+    return format_bottles(bottles)
+
+@function_tool
+async def get_random_bottles_tool(count: int = 3) -> str:
+    """Get a specified number of random bottles from the inventory. Default is 3 bottles."""
+    notion, db_id = get_notion_client_and_db()
+    bottles = await asyncio.to_thread(get_random_bottles, notion, db_id, count)
     return format_bottles(bottles)
 
 @function_tool

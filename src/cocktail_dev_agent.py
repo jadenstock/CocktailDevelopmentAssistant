@@ -7,6 +7,7 @@ from agents import Agent, ModelSettings, Runner, WebSearchTool, FileSearchTool
 from src.settings import INSTA_POST_OPENAI_DB
 from src.notion.notion_tools import (
     get_all_bottles_tool,
+    get_random_bottles_tool,
     get_available_ingredients_tool,
     get_available_wines_tool,
     save_cocktail_to_notion_tool,
@@ -114,6 +115,7 @@ main_agent = Agent(
             tool_description="Find flaor affinities given one or more flavors.",
         ),
         get_all_bottles_tool,
+        get_random_bottles_tool,
         get_available_ingredients_tool,
         cocktail_spec_analyzer.as_tool(
             tool_name="analyze_cocktail_spec",

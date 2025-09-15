@@ -376,20 +376,51 @@ def query_bottles_by_notes(notion_client, database_id, notes_query):
 def get_all_bottles(notion_client, database_id):
     """
     Get all bottles in the inventory.
-    
+
     Args:
         notion_client: The Notion client instance
         database_id: The ID of the bottle inventory database
-        
+
     Returns:
         A list of dictionaries containing bottle information
     """
     try:
         # Query the database with no filter to get all entries
         return query_notion_database(notion_client, database_id)
-    
+
     except Exception as e:
         print(f"Error getting all bottles: {e}")
+        return []
+
+
+def get_random_bottles(notion_client, database_id, count=3):
+    """
+    Get a specified number of random bottles from the inventory.
+
+    Args:
+        notion_client: The Notion client instance
+        database_id: The ID of the bottle inventory database
+        count: The number of random bottles to return (default: 3)
+
+    Returns:
+        A list of dictionaries containing random bottle information
+    """
+    import random
+
+    try:
+        # Get all bottles first
+        all_bottles = query_notion_database(notion_client, database_id)
+
+        if not all_bottles:
+            print("No bottles found in inventory")
+            return []
+
+        # Return random selection, ensuring we don't try to select more than available
+        selection_count = min(count, len(all_bottles))
+        return random.sample(all_bottles, selection_count)
+
+    except Exception as e:
+        print(f"Error getting random bottles: {e}")
         return []
 
 
