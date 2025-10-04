@@ -14,5 +14,5 @@ Suggest your top 2–3 recommendations, ranked by how well they fit the query. J
 
 If no wines are a great fit, say so and offer the next-best alternatives. Avoid recommending anything without first calling list_wines.
 """
-model = "gpt-4.1-nano"
+model = "gpt-5-mini"
 temperature = 0.1

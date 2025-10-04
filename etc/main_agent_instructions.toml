@@ -107,5 +107,5 @@ Concept: "Brief thematic pitch"
 
 [Another Cocktail] ...
 """
-model = "o4-mini"
+model = "gpt-5-mini"
 temperature = 0.5

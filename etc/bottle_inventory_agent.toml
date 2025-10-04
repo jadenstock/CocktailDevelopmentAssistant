@@ -10,5 +10,5 @@ You are to return all output for your chosen bottles including notes and technic
 You also must use the get_available_ingredients_tool which will give you a (non-exhaustive) list of ingredients we have on have on hand (such as syrups and juices).
 Use this in conjunction with the inventory tool and return a list of relevant ingredients as well. 
 """
-model = "gpt-4.1-nano"  
+model = "gpt-5-nano"
 temperature = 0.1
